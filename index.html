@@ -1,747 +1,278 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>공유 식단 캘린더</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body{
-margin:0;
-font-family:sans-serif;
-background:#f6f3ff;
-padding:15px;
-display:grid;
-grid-template-columns:260px 1fr 260px;
-gap:15px;
-}
-
-.panel{
-background:white;
-border-radius:20px;
-padding:15px;
-box-shadow:0 5px 20px rgba(0,0,0,0.08);
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(7,1fr);
-gap:8px;
-}
-
-.cell{
-height:120px;
-border-radius:18px;
-overflow:hidden;
-position:relative;
-background:#fff;
-cursor:pointer;
-border:1px solid #eee;
-}
-
-.cell-bg{
-position:absolute;
-inset:0;
-background-size:cover;
-background-position:center;
-}
-
-.cell-overlay{
-position:absolute;
-inset:0;
-background:linear-gradient(to bottom,rgba(0,0,0,0.1),rgba(0,0,0,0.45));
-}
-
-.cell-content{
-position:relative;
-z-index:2;
-height:100%;
-padding:8px;
-display:flex;
-flex-direction:column;
-}
-
-.date{
-font-size:18px;
-font-weight:800;
-color:white;
-text-shadow:0 2px 5px rgba(0,0,0,0.9);
-}
-
-.meal{
-margin-top:auto;
-background:rgba(255,255,255,0.85);
-padding:6px;
-border-radius:10px;
-font-size:12px;
-font-weight:bold;
-}
-
-.empty{
-opacity:0;
-pointer-events:none;
-}
-
-button{
-border:none;
-border-radius:10px;
-padding:10px;
-cursor:pointer;
-}
-
-input,textarea,select{
-width:100%;
-padding:10px;
-border-radius:10px;
-border:1px solid #ddd;
-margin-bottom:10px;
-}
-
-.modal{
-display:none;
-position:fixed;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-background:white;
-width:350px;
-max-height:90vh;
-overflow:auto;
-padding:20px;
-border-radius:20px;
-z-index:100;
-}
-
-.modal.active{display:block;}
-
-.overlay{
-display:none;
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.45);
-z-index:99;
-}
-
-.overlay.active{display:block;}
-
-.week{
-display:grid;
-grid-template-columns:repeat(7,1fr);
-margin-bottom:10px;
-font-weight:bold;
-text-align:center;
-}
-
-#photo-preview{
-width:100%;
-border-radius:12px;
-display:none;
-margin-top:10px;
-}
-
-.inventory-item{
-display:flex;
-justify-content:space-between;
-background:#fafafa;
-padding:8px;
-border-radius:10px;
-margin-bottom:6px;
-}
-
-@media(max-width:1200px){
-body{
-grid-template-columns:1fr;
-}
-}
-</style>
+    <meta charset="UTF-8">
+    <title>식단표 캘린더 (수량 보충 로직 수정)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 0; padding: 20px; background: #e9ecef; display: grid; grid-template-columns: 320px 1fr 320px; gap: 20px; height: calc(100vh - 40px); box-sizing: border-box; }
+        .panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-y: auto; display: flex; flex-direction: column; }
+        h2 { font-size: 1.2rem; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #333; }
+        .data-tools { display: flex; gap: 5px; margin-bottom: 15px; }
+        .data-tools button, .data-tools label { flex: 1; padding: 8px; font-size: 11px; text-align: center; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        #calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        #calendar-header button { padding: 5px 15px; cursor: pointer; background: #333; color: #fff; border: none; border-radius: 4px; }
+        .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; flex-grow: 1; }
+        .cell { border: 1px solid #ddd; min-height: 100px; padding: 5px; cursor: pointer; position: relative; border-radius: 4px; display: flex; flex-direction: column; justify-content: flex-start; }
+        .cell:hover { background: #f1f3f5; }
+        .cell.empty { background: #f8f9fa; cursor: default; border-color: #eee; }
+        .date { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; }
+        .meal-tag { background: #e0f7fa; padding: 5px; font-size: 14px; font-weight: bold; border-radius: 4px; display: block; margin-top: 2px; border: 1px solid #b2ebf2; word-break: break-all; text-align: center; color: #006064; }
+        .link-tag { display: inline-block; background: #e7f1ff; color: #0d6efd; font-size: 11px; padding: 3px 6px; border-radius: 4px; text-decoration: none; margin-top: 5px; text-align: center; border: 1px solid #b6d4fe; }
+        .star-rating { font-size: 20px; color: #ffca28; cursor: pointer; margin-top: auto; padding-top: 5px; text-align: center; }
+        .star-rating span { margin-right: 2px; text-shadow: 1px 1px 1px rgba(0,0,0,0.1); }
+        .star-rating span.empty { color: #e0e0e0; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 320px; }
+        .modal.active { display: block; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        .overlay.active { display: block; }
+        input, textarea { width: 100%; margin-bottom: 10px; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button.action-btn { padding: 8px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; width: 100%; margin-top: 5px; font-weight: bold; }
+        button.cancel-btn { padding: 8px; background: #dc3545; color: white; border: none; cursor: pointer; border-radius: 4px; width: 100%; margin-top: 5px; }
+        button.export-btn { padding: 8px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; flex: 1; font-weight: bold; }
+        ul { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+        ul li { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        ul li button { padding: 2px 5px; font-size: 10px; cursor: pointer; background: #dc3545; color: #fff; border: none; border-radius: 3px; }
+        .history-item { display: block !important; }
+    </style>
 </head>
 <body>
 
-<div class="panel">
-<h2>🧂 식재료 현황</h2>
-
-<div style="display:flex;gap:8px;">
-<input id="new-item" placeholder="예: 계란 6, 간장">
-<button onclick="addInventory()" style="background:#7c5cff;color:white;">추가</button>
-</div>
-
-<div id="inventory-list"></div>
-</div>
-
-<div class="panel">
-
-<div style="display:flex;justify-content:space-between;align-items:center;">
-<button onclick="changeMonth(-1)">◀</button>
-<h2 id="month-title"></h2>
-<button onclick="changeMonth(1)">▶</button>
-</div>
-
-<div class="week">
-<div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
-</div>
-
-<div class="grid" id="calendar"></div>
-
-</div>
-
-<div class="panel">
-
-<h2>🍽 식단 히스토리</h2>
-
-<select id="sort" onchange="renderHistory()">
-<option value="latest">최신순</option>
-<option value="star">별점순</option>
-</select>
-
-<input id="search" placeholder="재료 검색" onkeyup="renderHistory()">
-
-<div id="history"></div>
-
-</div>
-
-<div class="overlay" id="overlay" onclick="closeModal()"></div>
-
-<div class="modal" id="modal">
-
-<h3 id="modal-title"></h3>
-
-<input id="meal-name" placeholder="메뉴">
-
-<textarea id="meal-memo" placeholder="메모"></textarea>
-
-<input id="meal-ingredients" placeholder="예: 계란 2, 간장">
-
-<input type="file" id="meal-photo" accept="image/*">
-
-<img id="photo-preview">
-
-<div style="display:flex;gap:8px;margin-top:10px;">
-<button onclick="saveMeal()" style="flex:1;background:#7c5cff;color:white;">저장</button>
-<button onclick="deleteMeal()" style="flex:1;background:#ff6b6b;color:white;">삭제</button>
-</div>
-
-</div>
-
-<script>
-
-const SUPABASE_URL = "https://utmjozwjgmhhrpyuqrpt.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Sxo_yAhHLwmxBcUeGjatdQ_ZPgjwD3o";
-
-let supabase=null;
-
-try{
-supabase = window.supabase.createClient(
-SUPABASE_URL,
-SUPABASE_KEY
-);
-}catch(e){
-console.log(e);
-}
-
-let year = new Date().getFullYear();
-let month = new Date().getMonth();
-
-let selectedDate="";
-let currentPhoto="";
-
-let dataStore={
-meals:{},
-inventory:{}
-};
-
-function saveLocal(){
-localStorage.setItem(
-"meal-calendar-data",
-JSON.stringify(dataStore)
-);
-}
-
-function loadLocal(){
-
-const saved =
-localStorage.getItem("meal-calendar-data");
-
-if(saved){
-dataStore = JSON.parse(saved);
-}
-}
-
-async function loadSupabase(){
-
-if(!supabase){
-loadLocal();
-renderAll();
-return;
-}
-
-try{
-
-const {data,error} =
-await supabase
-.from("meals")
-.select("*");
-
-if(error) throw error;
-
-dataStore.meals={};
-
-data.forEach(v=>{
-
-dataStore.meals[v.date]={
-menu:v.menu || "",
-memo:v.memo || "",
-ingredients:v.ingredients
-? v.ingredients.split(",")
-: [],
-photo:v.photo || "",
-star:v.star || 0
-};
-
-});
-
-renderAll();
-
-}catch(err){
-
-console.log(err);
-
-loadLocal();
-renderAll();
-}
-}
-
-function renderAll(){
-renderCalendar();
-renderInventory();
-renderHistory();
-}
-
-function parseIngredient(str){
-
-const match =
-str.match(/^(.*?)\s*(\d+)$/);
-
-if(match){
-
-return{
-name:match[1].trim(),
-qty:Number(match[2]),
-infinite:false
-};
-}
-
-return{
-name:str.trim(),
-qty:9999,
-infinite:true
-};
-}
-
-function addInventory(){
-
-const val =
-document.getElementById("new-item")
-.value.trim();
-
-if(!val) return;
-
-const parsed =
-parseIngredient(val);
-
-if(parsed.infinite){
-
-dataStore.inventory[parsed.name]="∞";
-
-}else{
-
-dataStore.inventory[parsed.name] =
-(dataStore.inventory[parsed.name] || 0)
-+ parsed.qty;
-}
-
-saveLocal();
-renderInventory();
-
-document.getElementById("new-item").value="";
-}
-
-function removeInventory(name){
-
-delete dataStore.inventory[name];
-
-saveLocal();
-renderInventory();
-}
-
-function renderInventory(){
-
-const wrap =
-document.getElementById("inventory-list");
-
-wrap.innerHTML="";
-
-Object.keys(dataStore.inventory)
-.forEach(name=>{
-
-const val =
-dataStore.inventory[name];
-
-wrap.innerHTML += `
-<div class="inventory-item">
-
-<div>
-${name}
-${val==="∞" ? "" : `(${val})`}
-</div>
-
-<button onclick="removeInventory('${name}')">
-삭제
-</button>
-
-</div>
-`;
-});
-}
-
-function changeMonth(v){
-
-month += v;
-
-if(month<0){
-month=11;
-year--;
-}
-
-if(month>11){
-month=0;
-year++;
-}
-
-renderCalendar();
-}
-
-function renderCalendar(){
-
-const grid =
-document.getElementById("calendar");
-
-grid.innerHTML="";
-
-document.getElementById("month-title")
-.innerText =
-`${year}년 ${month+1}월`;
-
-const first =
-new Date(year,month,1).getDay();
-
-const last =
-new Date(year,month+1,0).getDate();
-
-for(let i=0;i<first;i++){
-
-const empty =
-document.createElement("div");
-
-empty.className="cell empty";
-
-grid.appendChild(empty);
-}
-
-for(let d=1; d<=last; d++){
-
-const date =
-`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-
-const meal =
-dataStore.meals[date];
-
-const div =
-document.createElement("div");
-
-div.className="cell";
-
-div.onclick=()=>openModal(date);
-
-let bg="";
-
-if(meal?.photo){
-
-bg=`
-<div class="cell-bg"
-style="background-image:url('${meal.photo}')"></div>
-<div class="cell-overlay"></div>
-`;
-}
-
-div.innerHTML=`
-${bg}
-
-<div class="cell-content">
-
-<div class="date">${d}</div>
-
-${meal ? `
-<div class="meal">
-${meal.menu}
-<br>
-<span style="color:#ffb400;">
-${"★".repeat(meal.star || 0)}
-</span>
-</div>
-` : ""}
-
-</div>
-`;
-
-grid.appendChild(div);
-}
-}
-
-function openModal(date){
-
-selectedDate=date;
-
-document.getElementById("overlay")
-.classList.add("active");
-
-document.getElementById("modal")
-.classList.add("active");
-
-document.getElementById("modal-title")
-.innerText = date;
-
-const meal =
-dataStore.meals[date];
-
-document.getElementById("meal-name")
-.value = meal?.menu || "";
-
-document.getElementById("meal-memo")
-.value = meal?.memo || "";
-
-document.getElementById("meal-ingredients")
-.value = meal?.ingredients?.join(", ") || "";
-
-currentPhoto = meal?.photo || "";
-
-const preview =
-document.getElementById("photo-preview");
-
-if(currentPhoto){
-
-preview.src=currentPhoto;
-preview.style.display="block";
-
-}else{
-
-preview.style.display="none";
-}
-
-document.getElementById("meal-photo").value="";
-}
-
-function closeModal(){
-
-document.getElementById("overlay")
-.classList.remove("active");
-
-document.getElementById("modal")
-.classList.remove("active");
-}
-
-document.getElementById("meal-photo")
-.addEventListener("change",async e=>{
-
-const file = e.target.files[0];
-
-if(!file) return;
-
-if(!supabase){
-
-const reader = new FileReader();
-
-reader.onload = ()=>{
-currentPhoto = reader.result;
-
-document.getElementById("photo-preview")
-.src = currentPhoto;
-
-document.getElementById("photo-preview")
-.style.display="block";
-};
-
-reader.readAsDataURL(file);
-
-return;
-}
-
-const fileName =
-Date.now()+"_"+file.name;
-
-const {error} =
-await supabase.storage
-.from("foods")
-.upload(fileName,file);
-
-if(error){
-
-alert("스토리지 업로드 실패");
-return;
-}
-
-const {data} =
-supabase.storage
-.from("foods")
-.getPublicUrl(fileName);
-
-currentPhoto = data.publicUrl;
-
-document.getElementById("photo-preview")
-.src = currentPhoto;
-
-document.getElementById("photo-preview")
-.style.display="block";
-});
-
-async function saveMeal(){
-
-const menu =
-document.getElementById("meal-name")
-.value.trim();
-
-if(!menu){
-alert("메뉴 입력");
-return;
-}
-
-const ingredients =
-document.getElementById("meal-ingredients")
-.value
-.split(",")
-.map(v=>v.trim())
-.filter(Boolean);
-
-dataStore.meals[selectedDate]={
-menu,
-memo:document.getElementById("meal-memo").value,
-ingredients,
-photo:currentPhoto,
-star:dataStore.meals[selectedDate]?.star || 0
-};
-
-saveLocal();
-
-if(supabase){
-
-try{
-
-await supabase
-.from("meals")
-.upsert({
-date:selectedDate,
-menu,
-memo:dataStore.meals[selectedDate].memo,
-ingredients:ingredients.join(","),
-photo:currentPhoto,
-star:dataStore.meals[selectedDate].star
-});
-
-}catch(err){
-console.log(err);
-}
-}
-
-renderAll();
-closeModal();
-}
-
-async function deleteMeal(){
-
-delete dataStore.meals[selectedDate];
-
-saveLocal();
-
-if(supabase){
-
-try{
-
-await supabase
-.from("meals")
-.delete()
-.eq("date",selectedDate);
-
-}catch(err){
-console.log(err);
-}
-}
-
-renderAll();
-closeModal();
-}
-
-function renderHistory(){
-
-const wrap =
-document.getElementById("history");
-
-wrap.innerHTML="";
-
-let meals =
-Object.entries(dataStore.meals);
-
-const search =
-document.getElementById("search")
-.value.trim();
-
-if(search){
-
-meals = meals.filter(([d,m])=>
-m.ingredients.some(i=>i.includes(search))
-);
-}
-
-const sort =
-document.getElementById("sort").value;
-
-if(sort==="star"){
-
-meals.sort((a,b)=>
-(b[1].star||0)-(a[1].star||0)
-);
-
-}else{
-
-meals.sort((a,b)=>
-b[0].localeCompare(a[0])
-);
-}
-
-meals.forEach(([date,m])=>{
-
-wrap.innerHTML += `
-<div class="inventory-item" style="display:block;">
-
-<b>${date}</b>
-
-<div>🍽 ${m.menu}</div>
-
-<div style="color:#ffb400;">
-${"★".repeat(m.star || 0)}
-</div>
-
-<div style="font-size:12px;color:#777;">
-${m.ingredients.join(", ")}
-</div>
-
-</div>
-`;
-});
-}
-
-loadSupabase();
-
-</script>
+    <div class="panel">
+        <h2>식재료 관리</h2>
+        <div class="data-tools">
+            <button onclick="exportDataJSON()">데이터 파일 백업</button>
+            <label for="import-file">파일 불러오기</label>
+            <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importDataJSON(this)">
+        </div>
+
+        <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+            <input type="text" id="new-item-name" placeholder="식재료 입력 (예: 햇반 2, 간장)" style="margin:0; flex: 1;">
+            <button onclick="addInventory()" style="padding: 0 15px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 4px;">추가</button>
+        </div>
+        
+        <h3 style="font-size: 1rem; margin-bottom: 5px;">현재 보유 식재료</h3>
+        <ul id="inventory-list" style="margin-bottom: 20px; overflow-y: auto; max-height: 250px;"></ul>
+        
+        <h3 style="font-size: 1rem; margin-bottom: 5px; color: #d9534f;">구매 필요 식재료</h3>
+        <ul id="shopping-list" style="color: #d9534f; font-weight: bold; overflow-y: auto;"></ul>
+    </div>
+
+    <div class="panel" id="calendar-panel">
+        <div id="calendar-header">
+            <button onclick="changeMonth(-1)">◀ 이전 달</button>
+            <h2 id="month-title" style="border:none; margin:0; padding:0;"></h2>
+            <button onclick="changeMonth(1)">다음 달 ▶</button>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="export-btn" onclick="exportToImage()">현재 캘린더 이미지 추출</button>
+            <button class="cancel-btn" style="margin: 0; width: 100px;" onclick="resetCurrentMonth()">해당 월 초기화</button>
+        </div>
+        <div class="weekdays"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+        <div class="grid" id="calendar-grid"></div>
+    </div>
+
+    <div class="panel">
+        <h2>식단 히스토리</h2>
+        <select id="filter-star" onchange="renderHistory()" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; margin-bottom: 10px;">
+            <option value="all">별점 필터 전체</option>
+            <option value="none">평가 전</option>
+            <option value="3">★★★</option>
+            <option value="2">★★</option>
+            <option value="1">★</option>
+        </select>
+        <input type="text" id="search-ingred" placeholder="식재료 명으로 검색..." onkeyup="renderHistory()">
+        <ul id="history-list" style="overflow-y: auto; flex-grow: 1;"></ul>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="closeModal()"></div>
+    <div class="modal" id="meal-modal">
+        <h3 id="modal-date-title" style="margin-top:0;"></h3>
+        <input type="hidden" id="modal-date">
+        <input type="text" id="modal-menu" placeholder="저녁 메뉴 이름">
+        <textarea id="modal-memo" placeholder="레시피 링크(http://...) 등 메모 작성" rows="3"></textarea>
+        <input type="text" id="modal-ingredients" placeholder="재료 (예: 햇반 2, 간장)">
+        <div style="display: flex; gap: 5px; margin-top: 10px;">
+            <button class="action-btn" onclick="saveMeal()" style="margin-top: 0; flex: 2;">저장 (재고 처리)</button>
+            <button type="button" onclick="setDiningOut()" style="margin-top: 0; flex: 1; padding: 8px; background: #ff9800; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;">외식/배달</button>
+        </div>
+        <button class="cancel-btn" onclick="deleteMeal()">메뉴 삭제</button>
+    </div>
+
+    <script>
+        let currentYear = 2026;
+        let currentMonth = 6; 
+        let appData = JSON.parse(localStorage.getItem('mealPlannerData_v2')) || { meals: {}, inventory: {} };
+
+        function saveData() { localStorage.setItem('mealPlannerData_v2', JSON.stringify(appData)); updateAllViews(); }
+        function updateAllViews() { renderCalendar(); renderInventory(); renderHistory(); }
+
+        function addInventory() {
+            const inputVal = document.getElementById('new-item-name').value.trim();
+            if(inputVal) {
+                const parsed = parseIngredient(inputVal);
+                if (appData.inventory[parsed.name] !== undefined && appData.inventory[parsed.name] < 0) {
+                    let deficit = Math.abs(appData.inventory[parsed.name]);
+                    appData.inventory[parsed.name] = (parsed.qty > deficit) ? (parsed.qty - deficit) : (appData.inventory[parsed.name] + parsed.qty);
+                } else {
+                    appData.inventory[parsed.name] = (appData.inventory[parsed.name] || 0) + parsed.qty;
+                }
+                document.getElementById('new-item-name').value = '';
+                recalculateShoppingList();
+                saveData();
+            }
+        }
+
+        function removeInventory(item) { delete appData.inventory[item]; recalculateShoppingList(); saveData(); }
+
+        function recalculateShoppingList() {
+            for (let date in appData.meals) {
+                const meal = appData.meals[date];
+                meal.ingredients.forEach(ingStr => {
+                    const parsed = parseIngredient(ingStr);
+                    if (!parsed.hasNumber && appData.inventory[parsed.name] === undefined) {
+                        appData.inventory[parsed.name] = -1;
+                        meal.deductions[parsed.name] = 1;
+                    }
+                });
+            }
+        }
+
+        function parseIngredient(str) {
+            const match = str.match(/^(.*?)\s*(\d+)\s*(개|g|ml|봉|인분|포션|병)?$/i);
+            return match ? { name: match[1].trim(), qty: parseInt(match[2], 10), hasNumber: true } : { name: str.trim(), qty: 1, hasNumber: false };
+        }
+
+        function changeMonth(offset) {
+            currentMonth += offset;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            else if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            renderCalendar();
+        }
+
+        function rollbackMeal(date) {
+            if(appData.meals[date]) {
+                const oldMeal = appData.meals[date];
+                oldMeal.ingredients.forEach(ingStr => {
+                    const parsed = parseIngredient(ingStr);
+                    let rollbackQty = oldMeal.deductions ? oldMeal.deductions[parsed.name] : (parsed.hasNumber ? parsed.qty : 1);
+                    if(appData.inventory[parsed.name] !== undefined && rollbackQty > 0) {
+                        appData.inventory[parsed.name] += rollbackQty;
+                        if(appData.inventory[parsed.name] === 0) delete appData.inventory[parsed.name];
+                    }
+                });
+            }
+        }
+
+        function resetCurrentMonth() {
+            if(!confirm(`이번 달 데이터를 초기화할 거야?`)) return;
+            const target = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            for (let date in appData.meals) { if (date.startsWith(target)) { rollbackMeal(date); delete appData.meals[date]; } }
+            saveData();
+        }
+
+        function generateStarHTML(date, currentStar) {
+            let html = `<div class="star-rating" onclick="event.stopPropagation();">`;
+            for(let i = 1; i <= 3; i++) html += `<span class="${i <= currentStar ? '' : 'empty'}" onclick="setDirectStar('${date}', ${i})">★</span>`;
+            return html + `</div>`;
+        }
+
+        function setDirectStar(date, starRating) {
+            if (appData.meals[date]) { appData.meals[date].star = (appData.meals[date].star === starRating) ? 0 : starRating; saveData(); }
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
+            document.getElementById('month-title').innerText = `${currentYear}년 ${currentMonth + 1}월`;
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const days = new Date(currentYear, currentMonth + 1, 0).getDate();
+            for(let i = 0; i < firstDay; i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'cell empty' }));
+            for(let i = 1; i <= days; i++) {
+                let dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                let cell = Object.assign(document.createElement('div'), { className: 'cell', onclick: () => openModal(dateStr) });
+                cell.innerHTML = `<div class="date">${i}</div>`;
+                if(appData.meals[dateStr]) {
+                    const m = appData.meals[dateStr];
+                    cell.innerHTML += `<span class="meal-tag">${m.menu}</span>`;
+                    const url = m.memo.match(/(https?:\/\/[^\s]+)/);
+                    if(url) cell.innerHTML += `<div style="text-align: center;"><a href="${url[0]}" target="_blank" class="link-tag" onclick="event.stopPropagation();">🔗 레시피</a></div>`;
+                    cell.innerHTML += generateStarHTML(dateStr, m.star);
+                }
+                grid.appendChild(cell);
+            }
+        }
+
+        function openModal(d) {
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('meal-modal').classList.add('active');
+            document.getElementById('modal-date-title').innerText = d + ' 식단';
+            document.getElementById('modal-date').value = d;
+            const m = appData.meals[d];
+            document.getElementById('modal-menu').value = m ? m.menu : '';
+            document.getElementById('modal-memo').value = m ? m.memo : '';
+            document.getElementById('modal-ingredients').value = m ? m.ingredients.join(', ') : '';
+        }
+
+        function closeModal() { document.getElementById('overlay').classList.remove('active'); document.getElementById('meal-modal').classList.remove('active'); }
+        function setDiningOut() { document.getElementById('modal-menu').value = '외식/배달'; document.getElementById('modal-ingredients').value = ''; saveMeal(); }
+
+        function saveMeal() {
+            const date = document.getElementById('modal-date').value;
+            const menu = document.getElementById('modal-menu').value.trim();
+            if(!menu) return alert("메뉴 이름을 입력해.");
+            rollbackMeal(date);
+            const ing = document.getElementById('modal-ingredients').value.split(',').map(s => s.trim()).filter(s => s);
+            const deductions = {};
+            ing.forEach(s => {
+                const p = parseIngredient(s);
+                if (p.hasNumber) { deductions[p.name] = p.qty; appData.inventory[p.name] = (appData.inventory[p.name] || 0) - p.qty; }
+                else {
+                    if ((appData.inventory[p.name] || 0) > 0) deductions[p.name] = 0;
+                    else { deductions[p.name] = 1; appData.inventory[p.name] = (appData.inventory[p.name] || 0) - 1; }
+                }
+            });
+            appData.meals[date] = { menu, star: appData.meals[date]?.star || 0, memo: document.getElementById('modal-memo').value, ingredients: ing, deductions };
+            saveData(); closeModal();
+        }
+
+        function deleteMeal() { rollbackMeal(document.getElementById('modal-date').value); delete appData.meals[document.getElementById('modal-date').value]; saveData(); closeModal(); }
+        function renderInventory() {
+            const list = document.getElementById('inventory-list'), shop = document.getElementById('shopping-list');
+            list.innerHTML = ''; shop.innerHTML = '';
+            for(let i in appData.inventory) {
+                if(appData.inventory[i] > 0) list.innerHTML += `<li><span>📦 ${i}</span> <span>${appData.inventory[i]} <button onclick="removeInventory('${i}')">X</button></span></li>`;
+                else if(appData.inventory[i] < 0) shop.innerHTML += `<li>❌ ${i} <span>구매 필요</span></li>`;
+            }
+            if(shop.innerHTML === '') shop.innerHTML = '<li>🛒 모든 재료 확보됨</li>';
+        }
+        function renderHistory() {
+            const list = document.getElementById('history-list'); list.innerHTML = '';
+            Object.keys(appData.meals).sort((a,b) => b.localeCompare(a)).forEach(d => {
+                const m = appData.meals[d];
+                const star = '★'.repeat(m.star) + '<span style="color:#e0e0e0">★</span>'.repeat(3 - m.star);
+                list.innerHTML += `<li class="history-item"><strong>${d}</strong> | ${m.menu}<div style="font-size: 16px; color: #ffca28;">${star}</div><small>재료: ${m.ingredients.join(', ')}</small><hr style="border:0; border-top:1px dashed #eee; margin:10px 0;"></li>`;
+            });
+        }
+        function exportDataJSON() {
+            const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+            a.download = "meal_data.json"; a.click();
+        }
+        function importDataJSON(input) {
+            const reader = new FileReader(); reader.onload = e => { appData = JSON.parse(e.target.result); saveData(); };
+            reader.readAsText(input.files[0]);
+        }
+        function exportToImage() {
+            const target = document.getElementById('calendar-panel');
+            const btns = Array.from(target.querySelectorAll('button'));
+            btns.forEach(b => b.style.display = 'none');
+            const ov = target.style.overflow; target.style.overflow = 'visible';
+            html2canvas(target, { scale: 2, backgroundColor: "#fff", width: target.scrollWidth }).then(c => {
+                const a = document.createElement('a'); a.download = '식단표.png'; a.href = c.toDataURL(); a.click();
+                btns.forEach(b => b.style.display = ''); target.style.overflow = ov;
+            });
+        }
+        updateAllViews();
+    </script>
 </body>
 </html>
