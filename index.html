@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>실시간 공유 식단표</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,166 +13,199 @@
 
 <style>
 
-body {
-    font-family: 'Malgun Gothic', sans-serif;
-    margin: 0;
-    padding: 20px;
-    background: #e9ecef;
-    display: grid;
-    grid-template-columns: 320px 1fr 320px;
-    gap: 20px;
-    height: calc(100vh - 40px);
-    box-sizing: border-box;
+body{
+    font-family:'Malgun Gothic',sans-serif;
+    margin:0;
+    padding:20px;
+    background:#e9ecef;
+    display:grid;
+    grid-template-columns:340px 1fr 340px;
+    gap:20px;
+    min-height:100vh;
+    box-sizing:border-box;
 }
 
-.panel {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    overflow-y: auto;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+.panel{
+    background:#fff;
+    border-radius:10px;
+    padding:20px;
+    overflow-y:auto;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
 }
 
-h2 {
-    margin-top: 0;
-    border-bottom: 2px solid #333;
-    padding-bottom: 10px;
+h2{
+    margin-top:0;
+    border-bottom:2px solid #333;
+    padding-bottom:10px;
 }
 
-button {
-    border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-weight: bold;
+h3{
+    margin-top:20px;
+    margin-bottom:10px;
+}
+
+button{
+    border:none;
+    border-radius:6px;
+    padding:8px 12px;
+    cursor:pointer;
+    font-weight:bold;
 }
 
 input,
-textarea,
-select {
-    width: 100%;
-    padding: 8px;
-    box-sizing: border-box;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    margin-bottom: 10px;
+textarea{
+    width:100%;
+    padding:8px;
+    box-sizing:border-box;
+    border-radius:6px;
+    border:1px solid #ccc;
+    margin-bottom:10px;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
+.grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:5px;
 }
 
-.cell {
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    min-height: 110px;
-    padding: 5px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
+.cell{
+    border:1px solid #ddd;
+    border-radius:6px;
+    min-height:110px;
+    padding:5px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
 }
 
-.cell:hover {
-    background: #f5f5f5;
+.cell:hover{
+    background:#f5f5f5;
 }
 
-.date {
-    font-weight: bold;
+.date{
+    font-weight:bold;
 }
 
-.meal-tag {
-    margin-top: 5px;
-    background: #dff7ff;
-    color: #006064;
-    padding: 5px;
-    border-radius: 5px;
-    text-align: center;
-    font-weight: bold;
+.meal-tag{
+    margin-top:5px;
+    background:#dff7ff;
+    color:#006064;
+    padding:5px;
+    border-radius:5px;
+    text-align:center;
+    font-weight:bold;
 }
 
-.weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    margin-bottom: 10px;
-    font-weight: bold;
+.weekdays{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    text-align:center;
+    margin-bottom:10px;
+    font-weight:bold;
 }
 
-.star-rating {
-    margin-top: auto;
-    text-align: center;
-    font-size: 20px;
-    color: #ffca28;
+.star-rating{
+    margin-top:auto;
+    text-align:center;
+    font-size:20px;
+    color:#ffca28;
 }
 
-.star-rating span.empty {
-    color: #ddd;
+.star-rating span.empty{
+    color:#ddd;
 }
 
-.modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    z-index: 100;
-    width: 320px;
-    padding: 20px;
-    border-radius: 10px;
-    display: none;
+.modal{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:white;
+    z-index:100;
+    width:340px;
+    padding:20px;
+    border-radius:10px;
+    display:none;
 }
 
-.modal.active {
-    display: block;
+.modal.active{
+    display:block;
 }
 
-.overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 99;
-    display: none;
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    z-index:99;
+    display:none;
 }
 
-.overlay.active {
-    display: block;
+.overlay.active{
+    display:block;
 }
 
-ul {
-    list-style: none;
-    padding: 0;
+ul{
+    list-style:none;
+    padding:0;
+    margin:0;
 }
 
-li {
-    padding: 6px 0;
-    border-bottom: 1px solid #eee;
+li{
+    padding:6px 0;
+    border-bottom:1px solid #eee;
 }
 
-.status {
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    font-weight: bold;
+.status{
+    padding:10px;
+    border-radius:6px;
+    margin-bottom:10px;
+    font-size:14px;
+    font-weight:bold;
 }
 
-.online {
-    background: #d4edda;
-    color: #155724;
+.online{
+    background:#d4edda;
+    color:#155724;
 }
 
-.offline {
-    background: #f8d7da;
-    color: #721c24;
+.offline{
+    background:#f8d7da;
+    color:#721c24;
 }
 
-@media(max-width: 1200px) {
+.permanent-item{
+    color:#0d6efd;
+    font-weight:bold;
+}
 
-    body {
-        grid-template-columns: 1fr;
-        height: auto;
+.recipe-item{
+    background:#fff8e1;
+}
+
+.inventory-input-wrap{
+    display:flex;
+    gap:8px;
+    align-items:center;
+}
+
+.inventory-input-wrap input{
+    margin:0;
+    flex:1;
+}
+
+.add-btn{
+    min-width:72px;
+    height:42px;
+    white-space:nowrap;
+    background:#6c757d;
+    color:white;
+    font-size:15px;
+}
+
+@media(max-width:1200px){
+
+    body{
+        grid-template-columns:1fr;
     }
 
 }
@@ -179,6 +213,7 @@ li {
 </style>
 
 </head>
+
 <body>
 
 <div class="panel">
@@ -189,18 +224,42 @@ li {
 
 <h2>식재료 관리</h2>
 
-<div style="display:flex; gap:5px;">
-<input type="text" id="new-item-name" placeholder="예: 햇반 2">
-<button onclick="addInventory()" style="background:#6c757d; color:white;">
-추가
-</button>
+<div style="font-size:13px; margin-bottom:10px; color:#666;">
+숫자 없이 추가하면 무한 재료 처리<br>
+예: 간장 / 소금 / 후추
+</div>
+
+<div class="inventory-input-wrap">
+
+<input
+type="text"
+id="new-item-name"
+placeholder="예: 햇반 2 / 간장"
+
+>
+
+<button
+class="add-btn"
+onclick="addInventory()"
+
+>
+
+추가 </button>
+
 </div>
 
 <h3>보유 식재료</h3>
 <ul id="inventory-list"></ul>
 
-<h3 style="color:red;">구매 필요</h3>
+<h3 style="color:red;">
+구매 필요
+</h3>
 <ul id="shopping-list"></ul>
+
+<h3 style="color:#ff9800;">
+레시피 사용 재료
+</h3>
+<ul id="recipe-ingredient-list"></ul>
 
 </div>
 
@@ -223,7 +282,11 @@ li {
 <div style="display:flex; gap:10px; margin-bottom:15px;">
 
 <button onclick="exportToImage()" style="background:#007bff; color:white; flex:1;">
-캘린더 이미지 저장
+캘린더 저장
+</button>
+
+<button onclick="resetCurrentMonth()" style="background:#dc3545; color:white;">
+이번달 초기화
 </button>
 
 </div>
@@ -246,6 +309,14 @@ li {
 
 <h2>식단 히스토리</h2>
 
+<input
+type="text"
+id="history-search"
+placeholder="식재료 검색..."
+onkeyup="renderHistory()"
+
+>
+
 <ul id="history-list"></ul>
 
 </div>
@@ -260,25 +331,46 @@ li {
 
 <input type="text" id="modal-menu" placeholder="메뉴 이름">
 
-<textarea id="modal-memo" rows="3" placeholder="메모"></textarea>
+<textarea
+id="modal-memo"
+rows="3"
+placeholder="메모"
+></textarea>
 
-<input type="text" id="modal-ingredients" placeholder="재료 (예: 햇반 2, 간장)">
+<input
+type="text"
+id="modal-ingredients"
+placeholder="재료 (예: 햇반 2, 간장)"
+
+>
 
 <div style="display:flex; gap:5px;">
 
-<button onclick="saveMeal()" style="background:#28a745; color:white; flex:2;">
-저장
-</button>
+<button
+onclick="saveMeal()"
+style="background:#28a745; color:white; flex:2;"
 
-<button onclick="setDiningOut()" style="background:#ff9800; color:white; flex:1;">
-외식
-</button>
+>
+
+저장 </button>
+
+<button
+onclick="setDiningOut()"
+style="background:#ff9800; color:white; flex:1;"
+
+>
+
+외식 </button>
 
 </div>
 
-<button onclick="deleteMeal()" style="background:#dc3545; color:white; width:100%; margin-top:10px;">
-삭제
-</button>
+<button
+onclick="deleteMeal()"
+style="background:#dc3545; color:white; width:100%; margin-top:10px;"
+
+>
+
+삭제 </button>
 
 </div>
 
@@ -302,36 +394,38 @@ let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 
 let appData = {
-    meals: {},
-    inventory: {}
+    meals:{},
+    inventory:{}
 };
 
-function parseIngredient(str) {
+function parseIngredient(str){
 
     const match =
     str.match(/^(.*?)\s*(\d+)$/);
 
     return match
     ? {
-        name: match[1].trim(),
-        qty: parseInt(match[2])
+        name:match[1].trim(),
+        qty:parseInt(match[2]),
+        permanent:false
       }
     : {
-        name: str.trim(),
-        qty: 1
+        name:str.trim(),
+        qty:1,
+        permanent:true
       };
 }
 
-async function loadData() {
+async function loadData(){
 
-    const { data, error } =
+    const { data,error } =
     await supabaseClient
     .from('meal_planner')
     .select('*')
-    .eq('room_id', ROOM_ID)
+    .eq('room_id',ROOM_ID)
     .single();
 
-    if(error) {
+    if(error){
 
         console.error(error);
 
@@ -340,57 +434,56 @@ async function loadData() {
         return;
     }
 
-    appData = data.data;
+    appData = data.data || {
+        meals:{},
+        inventory:{}
+    };
+
+    recalculateInventory();
 
     updateAllViews();
 }
 
-async function saveData() {
+async function saveData(){
 
-    const { error } =
     await supabaseClient
     .from('meal_planner')
     .update({
-        data: appData,
-        updated_at: new Date().toISOString()
+        data:appData,
+        updated_at:new Date().toISOString()
     })
-    .eq('room_id', ROOM_ID);
-
-    if(error) {
-
-        console.error(error);
-
-        alert('저장 실패');
-    }
+    .eq('room_id',ROOM_ID);
 }
 
-function setupRealtime() {
+function setupRealtime(){
 
     supabaseClient
     .channel('meal-sync')
     .on(
         'postgres_changes',
         {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'meal_planner'
+            event:'UPDATE',
+            schema:'public',
+            table:'meal_planner'
         },
-        payload => {
+        payload=>{
 
-            if(payload.new.room_id === ROOM_ID) {
+            if(payload.new.room_id === ROOM_ID){
 
                 appData = payload.new.data;
+
+                recalculateInventory();
 
                 updateAllViews();
             }
         }
     )
-    .subscribe(status => {
+    .subscribe(status=>{
 
         const el =
         document.getElementById('sync-status');
 
-        if(status === 'SUBSCRIBED') {
+        if(status === 'SUBSCRIBED'){
 
             el.innerText =
             '🟢 실시간 동기화 연결됨';
@@ -398,7 +491,7 @@ function setupRealtime() {
             el.className =
             'status online';
         }
-        else {
+        else{
 
             el.innerText =
             '🔴 연결 끊김';
@@ -406,21 +499,21 @@ function setupRealtime() {
             el.className =
             'status offline';
         }
-
-        console.log(status);
     });
 }
 
-function updateAllViews() {
+function updateAllViews(){
 
     renderCalendar();
 
     renderInventory();
 
+    renderRecipeIngredients();
+
     renderHistory();
 }
 
-function addInventory() {
+function addInventory(){
 
     const input =
     document
@@ -433,9 +526,26 @@ function addInventory() {
     const parsed =
     parseIngredient(input);
 
-    appData.inventory[parsed.name] =
-        (appData.inventory[parsed.name] || 0)
-        + parsed.qty;
+    if(parsed.permanent){
+
+        appData.inventory[parsed.name] = {
+            qty:999999,
+            permanent:true
+        };
+    }
+    else{
+
+        if(!appData.inventory[parsed.name]){
+
+            appData.inventory[parsed.name] = {
+                qty:0,
+                permanent:false
+            };
+        }
+
+        appData.inventory[parsed.name].qty +=
+        parsed.qty;
+    }
 
     document
     .getElementById('new-item-name')
@@ -446,27 +556,29 @@ function addInventory() {
     updateAllViews();
 }
 
-function removeInventory(name) {
+function removeInventory(name){
 
     delete appData.inventory[name];
+
+    recalculateInventory();
 
     saveData();
 
     updateAllViews();
 }
 
-function changeMonth(offset) {
+function changeMonth(offset){
 
     currentMonth += offset;
 
-    if(currentMonth < 0) {
+    if(currentMonth < 0){
 
         currentMonth = 11;
 
         currentYear--;
     }
 
-    if(currentMonth > 11) {
+    if(currentMonth > 11){
 
         currentMonth = 0;
 
@@ -476,7 +588,136 @@ function changeMonth(offset) {
     renderCalendar();
 }
 
-function renderCalendar() {
+function resetCurrentMonth(){
+
+    if(!confirm('이번달 데이터를 초기화할까요?'))
+    return;
+
+    const prefix =
+    `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+
+    Object.keys(appData.meals)
+    .forEach(date=>{
+
+        if(date.startsWith(prefix)){
+
+            delete appData.meals[date];
+        }
+    });
+
+    recalculateInventory();
+
+    saveData();
+
+    updateAllViews();
+}
+
+function recalculateInventory(){
+
+    const baseInventory = {};
+
+    Object.keys(appData.inventory)
+    .forEach(name=>{
+
+        const item =
+        appData.inventory[name];
+
+        baseInventory[name] = {
+            qty:item.qty,
+            permanent:item.permanent
+        };
+    });
+
+    Object.values(appData.meals)
+    .forEach(meal=>{
+
+        meal.ingredients.forEach(i=>{
+
+            const parsed =
+            parseIngredient(i);
+
+            if(
+                baseInventory[parsed.name] &&
+                baseInventory[parsed.name].permanent
+            ){
+                return;
+            }
+
+            if(!baseInventory[parsed.name]){
+
+                baseInventory[parsed.name] = {
+                    qty:0,
+                    permanent:false
+                };
+            }
+
+            baseInventory[parsed.name].qty -=
+            parsed.qty;
+        });
+    });
+
+    appData.inventory = baseInventory;
+}
+
+function renderRecipeIngredients(){
+
+    const list =
+    document.getElementById('recipe-ingredient-list');
+
+    list.innerHTML = '';
+
+    const recipeMap = {};
+
+    Object.values(appData.meals)
+    .forEach(meal=>{
+
+        meal.ingredients.forEach(i=>{
+
+            const parsed =
+            parseIngredient(i);
+
+            if(!recipeMap[parsed.name]){
+
+                recipeMap[parsed.name] = {
+                    qty:0,
+                    permanent:parsed.permanent
+                };
+            }
+
+            recipeMap[parsed.name].qty +=
+            parsed.qty;
+        });
+    });
+
+    const sorted =
+    Object.keys(recipeMap).sort();
+
+    if(sorted.length === 0){
+
+        list.innerHTML =
+        '<li>등록된 재료 없음</li>';
+
+        return;
+    }
+
+    sorted.forEach(name=>{
+
+        const item =
+        recipeMap[name];
+
+        list.innerHTML +=
+        `<li class="recipe-item">
+        🍳 ${name}
+        ${
+            item.permanent
+            ? '(상시사용)'
+            : '(' + item.qty + ')'
+        }
+        </li>`;
+    });
+}
+
+function renderCalendar(){
 
     const grid =
     document.getElementById('calendar-grid');
@@ -486,17 +727,17 @@ function renderCalendar() {
     document
     .getElementById('month-title')
     .innerText =
-    `${currentYear}년 ${currentMonth + 1}월`;
+    `${currentYear}년 ${currentMonth+1}월`;
 
     const firstDay =
-    new Date(currentYear, currentMonth, 1)
+    new Date(currentYear,currentMonth,1)
     .getDay();
 
     const days =
-    new Date(currentYear, currentMonth + 1, 0)
+    new Date(currentYear,currentMonth+1,0)
     .getDate();
 
-    for(let i=0;i<firstDay;i++) {
+    for(let i=0;i<firstDay;i++){
 
         const empty =
         document.createElement('div');
@@ -506,7 +747,7 @@ function renderCalendar() {
         grid.appendChild(empty);
     }
 
-    for(let i=1;i<=days;i++) {
+    for(let i=1;i<=days;i++){
 
         const date =
         `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
@@ -517,19 +758,19 @@ function renderCalendar() {
         cell.className = 'cell';
 
         cell.onclick =
-        () => openModal(date);
+        ()=>openModal(date);
 
         let html =
         `<div class="date">${i}</div>`;
 
-        if(appData.meals[date]) {
+        if(appData.meals[date]){
 
             const meal =
             appData.meals[date];
 
             html +=
             `<div class="meal-tag">
-                ${meal.menu}
+            ${meal.menu}
             </div>`;
 
             html +=
@@ -545,25 +786,25 @@ function renderCalendar() {
     }
 }
 
-function generateStarHTML(date, star) {
+function generateStarHTML(date,star){
 
     let html =
     `<div class="star-rating">`;
 
-    for(let i=1;i<=3;i++) {
+    for(let i=1;i<=3;i++){
 
         html +=
         `<span
-            class="${i<=star?'':'empty'}"
-            onclick="event.stopPropagation(); setStar('${date}', ${i})">
-            ★
+        class="${i<=star?'':'empty'}"
+        onclick="event.stopPropagation(); setStar('${date}',${i})">
+        ★
         </span>`;
     }
 
     return html + '</div>';
 }
 
-function setStar(date, star) {
+function setStar(date,star){
 
     if(!appData.meals[date]) return;
 
@@ -577,7 +818,7 @@ function setStar(date, star) {
     updateAllViews();
 }
 
-function openModal(date) {
+function openModal(date){
 
     document
     .getElementById('overlay')
@@ -616,7 +857,7 @@ function openModal(date) {
     : '';
 }
 
-function closeModal() {
+function closeModal(){
 
     document
     .getElementById('overlay')
@@ -627,7 +868,7 @@ function closeModal() {
     .classList.remove('active');
 }
 
-function setDiningOut() {
+function setDiningOut(){
 
     document
     .getElementById('modal-menu')
@@ -640,7 +881,7 @@ function setDiningOut() {
     saveMeal();
 }
 
-function saveMeal() {
+function saveMeal(){
 
     const date =
     document
@@ -663,10 +904,10 @@ function saveMeal() {
     .getElementById('modal-ingredients')
     .value
     .split(',')
-    .map(v => v.trim())
-    .filter(v => v);
+    .map(v=>v.trim())
+    .filter(v=>v);
 
-    if(!menu) {
+    if(!menu){
 
         alert('메뉴 이름 입력');
 
@@ -681,15 +922,7 @@ function saveMeal() {
         appData.meals[date]?.star || 0
     };
 
-    ingredients.forEach(i => {
-
-        const parsed =
-        parseIngredient(i);
-
-        appData.inventory[parsed.name] =
-            (appData.inventory[parsed.name] || 0)
-            - parsed.qty;
-    });
+    recalculateInventory();
 
     saveData();
 
@@ -698,7 +931,7 @@ function saveMeal() {
     updateAllViews();
 }
 
-function deleteMeal() {
+function deleteMeal(){
 
     const date =
     document
@@ -707,6 +940,8 @@ function deleteMeal() {
 
     delete appData.meals[date];
 
+    recalculateInventory();
+
     saveData();
 
     closeModal();
@@ -714,7 +949,7 @@ function deleteMeal() {
     updateAllViews();
 }
 
-function renderInventory() {
+function renderInventory(){
 
     const list =
     document.getElementById('inventory-list');
@@ -727,87 +962,122 @@ function renderInventory() {
     shop.innerHTML = '';
 
     Object.keys(appData.inventory)
-    .forEach(name => {
+    .sort()
+    .forEach(name=>{
 
-        const qty =
+        const item =
         appData.inventory[name];
 
-        if(qty > 0) {
+        if(item.permanent){
+
+            list.innerHTML +=
+            `<li class="permanent-item">
+            ♾️ ${name}
+            <button
+            onclick="removeInventory('${name}')"
+            style="background:red; color:white; margin-left:8px;">
+            X
+            </button>
+            </li>`;
+
+            return;
+        }
+
+        if(item.qty > 0){
 
             list.innerHTML +=
             `<li>
-                📦 ${name} (${qty})
-                <button
-                onclick="removeInventory('${name}')"
-                style="background:red; color:white;">
-                X
-                </button>
+            📦 ${name} (${item.qty})
+            <button
+            onclick="removeInventory('${name}')"
+            style="background:red; color:white; margin-left:8px;">
+            X
+            </button>
             </li>`;
         }
-        else {
+        else if(item.qty < 0){
 
             shop.innerHTML +=
             `<li>
-                ❌ ${name} 구매 필요
+            ❌ ${name}
+            (${Math.abs(item.qty)} 부족)
             </li>`;
         }
     });
 
-    if(shop.innerHTML === '') {
+    if(shop.innerHTML === ''){
 
         shop.innerHTML =
         '<li>🛒 모든 재료 확보됨</li>';
     }
 }
 
-function renderHistory() {
+function renderHistory(){
 
     const list =
     document.getElementById('history-list');
+
+    const keyword =
+    document
+    .getElementById('history-search')
+    .value
+    .trim();
 
     list.innerHTML = '';
 
     Object.keys(appData.meals)
     .sort((a,b)=>b.localeCompare(a))
-    .forEach(date => {
+    .forEach(date=>{
 
         const meal =
         appData.meals[date];
+
+        const ingredientsText =
+        meal.ingredients.join(', ');
+
+        if(
+            keyword &&
+            !ingredientsText.includes(keyword)
+        ){
+            return;
+        }
 
         const stars =
         '★'.repeat(meal.star || 0);
 
         list.innerHTML +=
         `<li>
-            <strong>${date}</strong><br>
-            ${meal.menu}<br>
-            <span style="color:#ffca28;">
-            ${stars}
-            </span><br>
-            <small>
-            ${meal.ingredients.join(', ')}
-            </small>
+        <strong>${date}</strong><br>
+        ${meal.menu}<br>
+        <span style="color:#ffca28;">
+        ${stars}
+        </span><br>
+        <small>
+        ${ingredientsText}
+        </small>
         </li>`;
     });
 }
 
-function exportToImage() {
+function exportToImage(){
 
     const target =
     document.getElementById('calendar-panel');
 
-    html2canvas(target, {
-        scale: 2,
-        backgroundColor: '#fff'
+    html2canvas(target,{
+        scale:2,
+        backgroundColor:'#fff'
     })
-    .then(canvas => {
+    .then(canvas=>{
 
         const a =
         document.createElement('a');
 
-        a.download = '식단표.png';
+        a.download =
+        '식단표.png';
 
-        a.href = canvas.toDataURL();
+        a.href =
+        canvas.toDataURL();
 
         a.click();
     });
