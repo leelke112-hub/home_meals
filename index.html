@@ -3,203 +3,186 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>실시간 공유 식단 캘린더</title>
+<title>공유 식단 캘린더</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-
-*{box-sizing:border-box;}
-
 body{
-    margin:0;
-    padding:16px;
-    font-family:'Pretendard',sans-serif;
-    background:linear-gradient(135deg,#fff7f0,#f4f0ff);
-    color:#444;
-    display:grid;
-    grid-template-columns:280px 1fr 280px;
-    gap:16px;
-    min-height:100vh;
+margin:0;
+font-family:sans-serif;
+background:#f6f3ff;
+padding:15px;
+display:grid;
+grid-template-columns:260px 1fr 260px;
+gap:15px;
 }
 
 .panel{
-    background:rgba(255,255,255,0.75);
-    backdrop-filter:blur(10px);
-    border-radius:24px;
-    padding:18px;
-    overflow-y:auto;
-    box-shadow:0 10px 30px rgba(0,0,0,0.08);
-}
-
-h2{margin-top:0;}
-
-button{
-    border:none;
-    border-radius:12px;
-    cursor:pointer;
-    font-weight:bold;
-    transition:0.2s;
-}
-
-button:hover{transform:translateY(-2px);}
-
-input, textarea, select{
-    width:100%;
-    border:none;
-    border-radius:12px;
-    padding:10px;
-    margin-bottom:10px;
-    background:white;
-}
-
-.inventory-item{
-    background:white;
-    border-radius:12px;
-    padding:10px;
-    margin-bottom:8px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+background:white;
+border-radius:20px;
+padding:15px;
+box-shadow:0 5px 20px rgba(0,0,0,0.08);
 }
 
 .grid{
-    display:grid;
-    grid-template-columns:repeat(7,1fr);
-    gap:8px;
+display:grid;
+grid-template-columns:repeat(7,1fr);
+gap:8px;
 }
 
 .cell{
-    position:relative;
-    height:120px;
-    border-radius:18px;
-    overflow:hidden;
-    background:white;
-    cursor:pointer;
-}
-
-.cell.empty{
-    opacity:0;
-    pointer-events:none;
+height:120px;
+border-radius:18px;
+overflow:hidden;
+position:relative;
+background:#fff;
+cursor:pointer;
+border:1px solid #eee;
 }
 
 .cell-bg{
-    position:absolute;
-    inset:0;
-    background-size:cover;
-    background-position:center;
+position:absolute;
+inset:0;
+background-size:cover;
+background-position:center;
 }
 
 .cell-overlay{
-    position:absolute;
-    inset:0;
-    background:linear-gradient(to bottom,rgba(0,0,0,0.1),rgba(0,0,0,0.3));
+position:absolute;
+inset:0;
+background:linear-gradient(to bottom,rgba(0,0,0,0.1),rgba(0,0,0,0.45));
 }
 
 .cell-content{
-    position:relative;
-    z-index:2;
-    height:100%;
-    padding:8px;
-    display:flex;
-    flex-direction:column;
+position:relative;
+z-index:2;
+height:100%;
+padding:8px;
+display:flex;
+flex-direction:column;
 }
 
 .date{
-    color:white;
-    font-weight:800;
-    font-size:17px;
-    text-shadow:0 2px 6px rgba(0,0,0,0.8);
+font-size:18px;
+font-weight:800;
+color:white;
+text-shadow:0 2px 5px rgba(0,0,0,0.9);
 }
 
-.meal-tag{
-    margin-top:auto;
-    background:rgba(255,255,255,0.85);
-    padding:6px;
-    border-radius:10px;
-    text-align:center;
-    font-size:12px;
+.meal{
+margin-top:auto;
+background:rgba(255,255,255,0.85);
+padding:6px;
+border-radius:10px;
+font-size:12px;
+font-weight:bold;
+}
+
+.empty{
+opacity:0;
+pointer-events:none;
+}
+
+button{
+border:none;
+border-radius:10px;
+padding:10px;
+cursor:pointer;
+}
+
+input,textarea,select{
+width:100%;
+padding:10px;
+border-radius:10px;
+border:1px solid #ddd;
+margin-bottom:10px;
 }
 
 .modal{
-    display:none;
-    position:fixed;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:360px;
-    max-height:90vh;
-    overflow-y:auto;
-    background:white;
-    border-radius:24px;
-    padding:20px;
-    z-index:100;
+display:none;
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:white;
+width:350px;
+max-height:90vh;
+overflow:auto;
+padding:20px;
+border-radius:20px;
+z-index:100;
 }
 
 .modal.active{display:block;}
 
 .overlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.45);
-    z-index:99;
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.45);
+z-index:99;
 }
 
 .overlay.active{display:block;}
 
-#photo-preview{
-    width:100%;
-    border-radius:16px;
-    display:none;
-    margin-top:10px;
+.week{
+display:grid;
+grid-template-columns:repeat(7,1fr);
+margin-bottom:10px;
+font-weight:bold;
+text-align:center;
 }
 
-.weekdays{
-    display:grid;
-    grid-template-columns:repeat(7,1fr);
-    margin-bottom:10px;
-    text-align:center;
-    font-weight:bold;
+#photo-preview{
+width:100%;
+border-radius:12px;
+display:none;
+margin-top:10px;
+}
+
+.inventory-item{
+display:flex;
+justify-content:space-between;
+background:#fafafa;
+padding:8px;
+border-radius:10px;
+margin-bottom:6px;
 }
 
 @media(max-width:1200px){
-    body{grid-template-columns:1fr;}
+body{
+grid-template-columns:1fr;
+}
 }
 </style>
 </head>
-
 <body>
 
 <div class="panel">
+<h2>🧂 식재료 현황</h2>
 
-<h2>🧂 식재료 관리</h2>
-
-<div style="display:flex; gap:8px;">
-<input id="new-item-name" placeholder="예: 계란 6, 간장">
-<button onclick="addInventory()" style="background:#7c5cff;color:white;padding:0 16px;">추가</button>
+<div style="display:flex;gap:8px;">
+<input id="new-item" placeholder="예: 계란 6, 간장">
+<button onclick="addInventory()" style="background:#7c5cff;color:white;">추가</button>
 </div>
 
-<h3>식재료 현황</h3>
-<ul id="inventory-list"></ul>
-
+<div id="inventory-list"></div>
 </div>
 
 <div class="panel">
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-<button onclick="changeMonth(-1)" style="background:#7c5cff;color:white;padding:10px;">◀</button>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<button onclick="changeMonth(-1)">◀</button>
 <h2 id="month-title"></h2>
-<button onclick="changeMonth(1)" style="background:#7c5cff;color:white;padding:10px;">▶</button>
+<button onclick="changeMonth(1)">▶</button>
 </div>
 
-<div class="weekdays">
+<div class="week">
 <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
 </div>
 
-<div class="grid" id="calendar-grid"></div>
+<div class="grid" id="calendar"></div>
 
 </div>
 
@@ -207,535 +190,558 @@ input, textarea, select{
 
 <h2>🍽 식단 히스토리</h2>
 
-<select id="history-sort" onchange="renderHistory()">
+<select id="sort" onchange="renderHistory()">
 <option value="latest">최신순</option>
 <option value="star">별점순</option>
 </select>
 
-<input id="ingredient-search" placeholder="식재료 검색" onkeyup="renderHistory()">
+<input id="search" placeholder="재료 검색" onkeyup="renderHistory()">
 
-<ul id="history-list"></ul>
+<div id="history"></div>
 
 </div>
 
 <div class="overlay" id="overlay" onclick="closeModal()"></div>
 
-<div class="modal" id="meal-modal">
+<div class="modal" id="modal">
 
-<h3 id="modal-date-title"></h3>
+<h3 id="modal-title"></h3>
 
-<input type="hidden" id="modal-date">
+<input id="meal-name" placeholder="메뉴">
 
-<input id="modal-menu" placeholder="오늘 메뉴">
+<textarea id="meal-memo" placeholder="메모"></textarea>
 
-<textarea id="modal-memo" rows="3" placeholder="메모"></textarea>
-
-<input id="modal-ingredients" placeholder="예: 계란 2, 간장">
+<input id="meal-ingredients" placeholder="예: 계란 2, 간장">
 
 <input type="file" id="meal-photo" accept="image/*">
 
 <img id="photo-preview">
 
 <div style="display:flex;gap:8px;margin-top:10px;">
-<button onclick="saveMeal()" style="flex:2;background:#7c5cff;color:white;padding:12px;">저장</button>
-<button onclick="deleteMeal()" style="flex:1;background:#ff6b6b;color:white;padding:12px;">삭제</button>
+<button onclick="saveMeal()" style="flex:1;background:#7c5cff;color:white;">저장</button>
+<button onclick="deleteMeal()" style="flex:1;background:#ff6b6b;color:white;">삭제</button>
 </div>
 
 </div>
 
 <script>
 
-const SUPABASE_URL = 'https://utmjozwjgmhhrpyuqrpt.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Sxo_yAhHLwmxBcUeGjatdQ_ZPgjwD3o';
+const SUPABASE_URL = "https://utmjozwjgmhhrpyuqrpt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Sxo_yAhHLwmxBcUeGjatdQ_ZPgjwD3o";
 
-const supabase = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
+let supabase=null;
+
+try{
+supabase = window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
 );
+}catch(e){
+console.log(e);
+}
 
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth();
-let currentPhotoData = '';
+let year = new Date().getFullYear();
+let month = new Date().getMonth();
 
-let appData = {
-    meals:{},
-    inventory:{}
+let selectedDate="";
+let currentPhoto="";
+
+let dataStore={
+meals:{},
+inventory:{}
 };
 
-async function loadMeals(){
+function saveLocal(){
+localStorage.setItem(
+"meal-calendar-data",
+JSON.stringify(dataStore)
+);
+}
 
-    const { data } =
-    await supabase
-    .from('meals')
-    .select('*');
+function loadLocal(){
 
-    appData.meals = {};
+const saved =
+localStorage.getItem("meal-calendar-data");
 
-    if(data){
+if(saved){
+dataStore = JSON.parse(saved);
+}
+}
 
-        data.forEach(item=>{
+async function loadSupabase(){
 
-            appData.meals[item.date] = {
+if(!supabase){
+loadLocal();
+renderAll();
+return;
+}
 
-                menu:item.menu,
-                memo:item.memo,
-                ingredients:item.ingredients
-                    ? item.ingredients.split(',')
-                    : [],
-                photo:item.photo,
-                star:item.star || 0
-            };
-        });
-    }
+try{
 
-    updateAllViews();
+const {data,error} =
+await supabase
+.from("meals")
+.select("*");
+
+if(error) throw error;
+
+dataStore.meals={};
+
+data.forEach(v=>{
+
+dataStore.meals[v.date]={
+menu:v.menu || "",
+memo:v.memo || "",
+ingredients:v.ingredients
+? v.ingredients.split(",")
+: [],
+photo:v.photo || "",
+star:v.star || 0
+};
+
+});
+
+renderAll();
+
+}catch(err){
+
+console.log(err);
+
+loadLocal();
+renderAll();
+}
+}
+
+function renderAll(){
+renderCalendar();
+renderInventory();
+renderHistory();
 }
 
 function parseIngredient(str){
 
-    const match =
-    str.match(/^(.*?)\s*(\d+)\s*(개|g|봉|ml)?$/i);
+const match =
+str.match(/^(.*?)\s*(\d+)$/);
 
-    return match
-    ? {
-        name:match[1].trim(),
-        qty:parseInt(match[2]),
-        hasNumber:true
-    }
-    : {
-        name:str.trim(),
-        qty:1,
-        hasNumber:false
-    };
+if(match){
+
+return{
+name:match[1].trim(),
+qty:Number(match[2]),
+infinite:false
+};
+}
+
+return{
+name:str.trim(),
+qty:9999,
+infinite:true
+};
 }
 
 function addInventory(){
 
-    const val =
-    document.getElementById('new-item-name')
-    .value.trim();
+const val =
+document.getElementById("new-item")
+.value.trim();
 
-    if(!val) return;
+if(!val) return;
 
-    const parsed = parseIngredient(val);
+const parsed =
+parseIngredient(val);
 
-    if(!parsed.hasNumber){
+if(parsed.infinite){
 
-        appData.inventory[parsed.name] = "infinite";
+dataStore.inventory[parsed.name]="∞";
 
-    }else{
+}else{
 
-        appData.inventory[parsed.name] =
-        (appData.inventory[parsed.name] || 0)
-        + parsed.qty;
-    }
+dataStore.inventory[parsed.name] =
+(dataStore.inventory[parsed.name] || 0)
++ parsed.qty;
+}
 
-    renderInventory();
+saveLocal();
+renderInventory();
 
-    document.getElementById('new-item-name').value='';
+document.getElementById("new-item").value="";
+}
+
+function removeInventory(name){
+
+delete dataStore.inventory[name];
+
+saveLocal();
+renderInventory();
 }
 
 function renderInventory(){
 
-    const list =
-    document.getElementById('inventory-list');
+const wrap =
+document.getElementById("inventory-list");
 
-    list.innerHTML='';
+wrap.innerHTML="";
 
-    for(let i in appData.inventory){
+Object.keys(dataStore.inventory)
+.forEach(name=>{
 
-        const value = appData.inventory[i];
+const val =
+dataStore.inventory[name];
 
-        list.innerHTML += `
-        <li class="inventory-item">
+wrap.innerHTML += `
+<div class="inventory-item">
 
-            <span>
-            ${value==="infinite" ? "🧂" : "📦"}
-            ${i}
-            ${value==="infinite" ? "" : "(" + value + ")"}
-            </span>
+<div>
+${name}
+${val==="∞" ? "" : `(${val})`}
+</div>
 
-            <button
-            onclick="removeInventory('${i}')"
-            style="background:#ff6b6b;color:white;padding:4px 8px;">
+<button onclick="removeInventory('${name}')">
+삭제
+</button>
 
-            삭제
-
-            </button>
-
-        </li>
-        `;
-    }
+</div>
+`;
+});
 }
 
-function removeInventory(item){
+function changeMonth(v){
 
-    delete appData.inventory[item];
+month += v;
 
-    renderInventory();
+if(month<0){
+month=11;
+year--;
 }
 
-function updateAllViews(){
-
-    renderCalendar();
-    renderHistory();
-    renderInventory();
+if(month>11){
+month=0;
+year++;
 }
 
-function changeMonth(offset){
-
-    currentMonth += offset;
-
-    if(currentMonth < 0){
-
-        currentMonth = 11;
-        currentYear--;
-
-    }else if(currentMonth > 11){
-
-        currentMonth = 0;
-        currentYear++;
-    }
-
-    renderCalendar();
+renderCalendar();
 }
 
 function renderCalendar(){
 
-    const grid =
-    document.getElementById('calendar-grid');
+const grid =
+document.getElementById("calendar");
 
-    grid.innerHTML='';
+grid.innerHTML="";
 
-    document.getElementById('month-title')
-    .innerText =
-    `${currentYear}년 ${currentMonth+1}월`;
+document.getElementById("month-title")
+.innerText =
+`${year}년 ${month+1}월`;
 
-    const firstDay =
-    new Date(currentYear,currentMonth,1).getDay();
+const first =
+new Date(year,month,1).getDay();
 
-    const days =
-    new Date(currentYear,currentMonth+1,0).getDate();
+const last =
+new Date(year,month+1,0).getDate();
 
-    for(let i=0;i<firstDay;i++){
+for(let i=0;i<first;i++){
 
-        const empty =
-        document.createElement('div');
+const empty =
+document.createElement("div");
 
-        empty.className='cell empty';
+empty.className="cell empty";
 
-        grid.appendChild(empty);
-    }
+grid.appendChild(empty);
+}
 
-    for(let i=1;i<=days;i++){
+for(let d=1; d<=last; d++){
 
-        const dateStr =
-        `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+const date =
+`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-        const meal =
-        appData.meals[dateStr];
+const meal =
+dataStore.meals[date];
 
-        const cell =
-        document.createElement('div');
+const div =
+document.createElement("div");
 
-        cell.className='cell';
+div.className="cell";
 
-        cell.onclick =
-        ()=>openModal(dateStr);
+div.onclick=()=>openModal(date);
 
-        let bg='';
+let bg="";
 
-        if(meal && meal.photo){
+if(meal?.photo){
 
-            bg = `
-            <div class="cell-bg"
-            style="background-image:url('${meal.photo}')">
-            </div>
+bg=`
+<div class="cell-bg"
+style="background-image:url('${meal.photo}')"></div>
+<div class="cell-overlay"></div>
+`;
+}
 
-            <div class="cell-overlay"></div>
-            `;
-        }
+div.innerHTML=`
+${bg}
 
-        cell.innerHTML = `
-        ${bg}
+<div class="cell-content">
 
-        <div class="cell-content">
+<div class="date">${d}</div>
 
-            <div class="date">${i}</div>
+${meal ? `
+<div class="meal">
+${meal.menu}
+<br>
+<span style="color:#ffb400;">
+${"★".repeat(meal.star || 0)}
+</span>
+</div>
+` : ""}
 
-            ${meal ? `
-            <div class="meal-tag">
-                ${meal.menu}
-                <div style="color:#ffc107;">
-                    ${'★'.repeat(meal.star || 0)}
-                </div>
-            </div>
-            ` : ''}
+</div>
+`;
 
-        </div>
-        `;
-
-        grid.appendChild(cell);
-    }
+grid.appendChild(div);
+}
 }
 
 function openModal(date){
 
-    document.getElementById('overlay')
-    .classList.add('active');
+selectedDate=date;
 
-    document.getElementById('meal-modal')
-    .classList.add('active');
+document.getElementById("overlay")
+.classList.add("active");
 
-    document.getElementById('modal-date-title')
-    .innerText = `${date} 식단`;
+document.getElementById("modal")
+.classList.add("active");
 
-    document.getElementById('modal-date')
-    .value = date;
+document.getElementById("modal-title")
+.innerText = date;
 
-    const meal =
-    appData.meals[date];
+const meal =
+dataStore.meals[date];
 
-    document.getElementById('modal-menu')
-    .value = meal ? meal.menu : '';
+document.getElementById("meal-name")
+.value = meal?.menu || "";
 
-    document.getElementById('modal-memo')
-    .value = meal ? meal.memo : '';
+document.getElementById("meal-memo")
+.value = meal?.memo || "";
 
-    document.getElementById('modal-ingredients')
-    .value = meal
-        ? meal.ingredients.join(', ')
-        : '';
+document.getElementById("meal-ingredients")
+.value = meal?.ingredients?.join(", ") || "";
 
-    currentPhotoData =
-    meal?.photo || '';
+currentPhoto = meal?.photo || "";
 
-    const preview =
-    document.getElementById('photo-preview');
+const preview =
+document.getElementById("photo-preview");
 
-    if(currentPhotoData){
+if(currentPhoto){
 
-        preview.src = currentPhotoData;
-        preview.style.display='block';
+preview.src=currentPhoto;
+preview.style.display="block";
 
-    }else{
+}else{
 
-        preview.style.display='none';
-    }
+preview.style.display="none";
+}
 
-    document.getElementById('meal-photo').value='';
+document.getElementById("meal-photo").value="";
 }
 
 function closeModal(){
 
-    document.getElementById('overlay')
-    .classList.remove('active');
+document.getElementById("overlay")
+.classList.remove("active");
 
-    document.getElementById('meal-modal')
-    .classList.remove('active');
+document.getElementById("modal")
+.classList.remove("active");
 }
 
-document.getElementById('meal-photo')
-.addEventListener('change', async function(e){
+document.getElementById("meal-photo")
+.addEventListener("change",async e=>{
 
-    const file = e.target.files[0];
+const file = e.target.files[0];
 
-    if(!file) return;
+if(!file) return;
 
-    const fileName =
-    Date.now() + '_' + file.name;
+if(!supabase){
 
-    const { error } =
-    await supabase.storage
-    .from('foods')
-    .upload(fileName, file);
+const reader = new FileReader();
 
-    if(error){
+reader.onload = ()=>{
+currentPhoto = reader.result;
 
-        alert('Storage 업로드 실패');
-        return;
-    }
+document.getElementById("photo-preview")
+.src = currentPhoto;
 
-    const { data } =
-    supabase.storage
-    .from('foods')
-    .getPublicUrl(fileName);
+document.getElementById("photo-preview")
+.style.display="block";
+};
 
-    currentPhotoData =
-    data.publicUrl;
+reader.readAsDataURL(file);
 
-    const preview =
-    document.getElementById('photo-preview');
+return;
+}
 
-    preview.src =
-    currentPhotoData;
+const fileName =
+Date.now()+"_"+file.name;
 
-    preview.style.display='block';
+const {error} =
+await supabase.storage
+.from("foods")
+.upload(fileName,file);
+
+if(error){
+
+alert("스토리지 업로드 실패");
+return;
+}
+
+const {data} =
+supabase.storage
+.from("foods")
+.getPublicUrl(fileName);
+
+currentPhoto = data.publicUrl;
+
+document.getElementById("photo-preview")
+.src = currentPhoto;
+
+document.getElementById("photo-preview")
+.style.display="block";
 });
 
 async function saveMeal(){
 
-    const date =
-    document.getElementById('modal-date')
-    .value;
+const menu =
+document.getElementById("meal-name")
+.value.trim();
 
-    const menu =
-    document.getElementById('modal-menu')
-    .value.trim();
+if(!menu){
+alert("메뉴 입력");
+return;
+}
 
-    if(!menu){
+const ingredients =
+document.getElementById("meal-ingredients")
+.value
+.split(",")
+.map(v=>v.trim())
+.filter(Boolean);
 
-        alert('메뉴를 입력해줘!');
-        return;
-    }
+dataStore.meals[selectedDate]={
+menu,
+memo:document.getElementById("meal-memo").value,
+ingredients,
+photo:currentPhoto,
+star:dataStore.meals[selectedDate]?.star || 0
+};
 
-    const ing =
-    document.getElementById('modal-ingredients')
-    .value
-    .split(',')
-    .map(v=>v.trim())
-    .filter(Boolean);
+saveLocal();
 
-    await supabase
-    .from('meals')
-    .upsert({
+if(supabase){
 
-        date:date,
-        menu:menu,
+try{
 
-        memo:
-        document.getElementById('modal-memo')
-        .value,
+await supabase
+.from("meals")
+.upsert({
+date:selectedDate,
+menu,
+memo:dataStore.meals[selectedDate].memo,
+ingredients:ingredients.join(","),
+photo:currentPhoto,
+star:dataStore.meals[selectedDate].star
+});
 
-        ingredients:ing.join(','),
+}catch(err){
+console.log(err);
+}
+}
 
-        photo:currentPhotoData,
-
-        star:
-        appData.meals[date]?.star || 0
-
-    });
-
-    closeModal();
-
-    loadMeals();
+renderAll();
+closeModal();
 }
 
 async function deleteMeal(){
 
-    const date =
-    document.getElementById('modal-date')
-    .value;
+delete dataStore.meals[selectedDate];
 
-    await supabase
-    .from('meals')
-    .delete()
-    .eq('date',date);
+saveLocal();
 
-    closeModal();
+if(supabase){
 
-    loadMeals();
+try{
+
+await supabase
+.from("meals")
+.delete()
+.eq("date",selectedDate);
+
+}catch(err){
+console.log(err);
+}
+}
+
+renderAll();
+closeModal();
 }
 
 function renderHistory(){
 
-    const list =
-    document.getElementById('history-list');
+const wrap =
+document.getElementById("history");
 
-    list.innerHTML='';
+wrap.innerHTML="";
 
-    const search =
-    document.getElementById('ingredient-search')
-    .value.trim();
+let meals =
+Object.entries(dataStore.meals);
 
-    const sort =
-    document.getElementById('history-sort')
-    .value;
+const search =
+document.getElementById("search")
+.value.trim();
 
-    let meals =
-    Object.entries(appData.meals);
+if(search){
 
-    if(search){
-
-        meals = meals.filter(([d,m])=>
-
-            m.ingredients.some(i=>
-
-                i.includes(search)
-            )
-        );
-    }
-
-    if(sort === 'star'){
-
-        meals.sort((a,b)=>
-            b[1].star - a[1].star
-        );
-
-    }else{
-
-        meals.sort((a,b)=>
-            b[0].localeCompare(a[0])
-        );
-    }
-
-    meals.forEach(([date,m])=>{
-
-        list.innerHTML += `
-        <li class="inventory-item" style="display:block;">
-
-            <strong>${date}</strong>
-
-            <div style="margin-top:5px;">
-                🍽 ${m.menu}
-            </div>
-
-            <div style="color:#ffc107;">
-                ${'★'.repeat(m.star || 0)}
-            </div>
-
-            <div style="
-            font-size:12px;
-            color:#777;
-            margin-top:6px;">
-
-            ${m.ingredients.join(', ')}
-
-            </div>
-
-        </li>
-        `;
-    });
+meals = meals.filter(([d,m])=>
+m.ingredients.some(i=>i.includes(search))
+);
 }
 
-supabase
-.channel('realtime-meals')
-.on(
-'postgres_changes',
-{
-    event:'*',
-    schema:'public',
-    table:'meals'
-},
-()=>{
+const sort =
+document.getElementById("sort").value;
 
-    loadMeals();
+if(sort==="star"){
 
-})
-.subscribe();
+meals.sort((a,b)=>
+(b[1].star||0)-(a[1].star||0)
+);
 
-loadMeals();
+}else{
 
-</script>
+meals.sort((a,b)=>
+b[0].localeCompare(a[0])
+);
+}
 
+meals.forEach(([date,m])=>{
 
-<script>
-window.addEventListener('error',e=>{
- console.log(e.error);
+wrap.innerHTML += `
+<div class="inventory-item" style="display:block;">
+
+<b>${date}</b>
+
+<div>🍽 ${m.menu}</div>
+
+<div style="color:#ffb400;">
+${"★".repeat(m.star || 0)}
+</div>
+
+<div style="font-size:12px;color:#777;">
+${m.ingredients.join(", ")}
+</div>
+
+</div>
+`;
 });
-if(!window.supabase){
- document.body.innerHTML="<div style='padding:30px;font-family:sans-serif'>Supabase 라이브러리 로드 실패. GitHub Pages/Netlify로 열거나 인터넷 연결 확인.</div>"
 }
+
+loadSupabase();
+
 </script>
 </body>
 </html>
