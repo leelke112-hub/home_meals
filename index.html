@@ -274,5 +274,102 @@
         }
         updateAllViews();
     </script>
+
+<script>
+const SUPABASE_URL = "https://utmjozwjgmhhrpyuqrpt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Sxo_yAhHLwmxBcUeGjatdQ_ZPgjwD3o";
+
+const sb = window.supabase
+? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+: null;
+
+async function syncToSupabase(){
+
+    if(!sb || !window.meals) return;
+
+    try{
+
+        const payload = [];
+
+        Object.keys(meals).forEach(date=>{
+
+            payload.push({
+                date:date,
+                data:JSON.stringify(meals[date])
+            });
+
+        });
+
+        await sb
+        .from("meal_calendar")
+        .upsert(payload);
+
+    }catch(e){
+
+        console.log("supabase save fail",e);
+    }
+}
+
+async function loadFromSupabase(){
+
+    if(!sb) return;
+
+    try{
+
+        const { data } =
+        await sb
+        .from("meal_calendar")
+        .select("*");
+
+        if(data){
+
+            window.meals = {};
+
+            data.forEach(v=>{
+
+                meals[v.date] =
+                JSON.parse(v.data);
+
+            });
+
+            if(typeof renderCalendar==="function"){
+                renderCalendar();
+            }
+
+            if(typeof renderHistory==="function"){
+                renderHistory();
+            }
+        }
+
+    }catch(e){
+
+        console.log("supabase load fail",e);
+    }
+}
+
+window.addEventListener("load",()=>{
+
+    setTimeout(()=>{
+
+        loadFromSupabase();
+
+        const originalSaveMeal =
+        window.saveMeal;
+
+        if(originalSaveMeal){
+
+            window.saveMeal = async function(){
+
+                await originalSaveMeal();
+
+                setTimeout(syncToSupabase,300);
+            }
+        }
+
+    },500);
+
+});
+</script>
+
 </body>
 </html>
