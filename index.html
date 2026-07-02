@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>강은이 유림이 식단표</title>
+<title>강림 식단표</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -381,22 +381,40 @@ li{
 }
 
 .recommend-box{
-    background:#fff3e8;
-    border:2px dashed #ffc9a8;
-    border-radius:18px;
-    padding:14px;
-    margin-bottom:14px;
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    width:min(420px, calc(100vw - 30px));
+    background:#fffaf7;
+    border:2px solid #ffc9a8;
+    border-radius:22px;
+    padding:16px;
+    z-index:120;
     display:none;
+    box-shadow:0 18px 40px rgba(0,0,0,0.18);
 }
 
-
-
-.recommend-drag-btn{
-    margin-top:12px;
+.recommend-photo{
     width:100%;
-    background:#ffb089;
-    color:white;
+    border-radius:16px;
+    margin-top:10px;
+    max-height:220px;
+    object-fit:cover;
 }
+
+.history-card[draggable="true"],
+.recommend-click-drag{
+    cursor:grab;
+}
+
+.history-card:active,
+.recommend-click-drag:active{
+    cursor:grabbing;
+}
+
+
+
+
 
 .modal-star-wrap{
     display:flex;
@@ -425,6 +443,29 @@ li{
     display:none;
     object-fit:cover;
     max-height:240px;
+}
+
+.photo-delete-btn{
+    margin-top:8px;
+    width:auto;
+    padding:7px 12px;
+    font-size:12px;
+    background:#ff8f8f;
+    color:white;
+    display:none;
+}
+
+.cell.has-photo{
+    background-size:cover !important;
+    background-position:center !important;
+}
+
+@media(max-width:900px){
+    .cell.has-photo{
+        background-size:contain !important;
+        background-repeat:no-repeat !important;
+        background-position:right bottom !important;
+    }
 }
 
 @media(max-width:1400px){
@@ -613,12 +654,21 @@ style="font-size:18px; font-weight:800; margin-bottom:8px;">
 
 <div id="recommend-menu-info"></div>
 
+<div style="display:flex; gap:8px; margin-top:12px;">
 <button
 id="recommend-drag-btn"
 class="recommend-drag-btn"
-draggable="true">
+draggable="true"
+style="margin-top:0; flex:2;">
 📌 드래그해서 달력에 놓기
 </button>
+
+<button
+onclick="closeRecommendBox()"
+style="background:#ff8f8f; color:white; flex:1;">
+닫기
+</button>
+</div>
 
 </div>
 
@@ -737,6 +787,13 @@ id="modal-photo"
 accept="image/*">
 
 <img id="photo-preview" class="photo-preview">
+
+<button
+id="photo-delete-btn"
+class="photo-delete-btn"
+onclick="removePhotoFromMeal()">
+📷 사진 삭제
+</button>
 
 <div style="display:flex; gap:8px;">
 
@@ -941,6 +998,10 @@ function updateAllViews(){
     renderCalendar();
     renderInventory();
     renderHistory();
+
+    setTimeout(()=>{
+        setupMobileTouchDrag();
+    },50);
 
 }
 
@@ -1423,6 +1484,19 @@ function renderCalendar(){
 
             cell.onclick=()=>openModal(date);
 
+            if(appData.meals[date]){
+
+                cell.draggable = true;
+
+                cell.addEventListener('dragstart', ()=>{
+                    draggedMeal = {
+                        ...appData.meals[date],
+                        __sourceDate:date
+                    };
+                });
+
+            }
+
             cell.addEventListener('dragover', e=>{
                 e.preventDefault();
                 cell.classList.add('drag-over');
@@ -1438,6 +1512,8 @@ function renderCalendar(){
 
                 if(!draggedMeal) return;
 
+                const sourceDate = draggedMeal.__sourceDate;
+
                 appData.meals[date] = {
                     menu:draggedMeal.menu,
                     memo:draggedMeal.memo,
@@ -1445,6 +1521,10 @@ function renderCalendar(){
                     star:draggedMeal.star || 0,
                     photo:draggedMeal.photo || ''
                 };
+
+                if(sourceDate && sourceDate !== date){
+                    delete appData.meals[sourceDate];
+                }
 
                 recalculateInventory();
                 saveData();
@@ -1469,13 +1549,21 @@ function renderCalendar(){
 
                 if(meal.photo){
 
+                    cell.classList.add('has-photo');
+
                     cell.style.backgroundImage =
-                    `linear-gradient(rgba(255,255,255,0.45),
-                    rgba(255,255,255,0.45)),
+                    `linear-gradient(rgba(255,255,255,0.55),
+                    rgba(255,255,255,0.55)),
                     url(${meal.photo})`;
 
-                    cell.style.backgroundSize = 'cover';
-                    cell.style.backgroundPosition = 'center';
+                    if(window.innerWidth <= 900){
+                        cell.style.backgroundSize = 'contain';
+                        cell.style.backgroundRepeat = 'no-repeat';
+                        cell.style.backgroundPosition = 'right bottom';
+                    }else{
+                        cell.style.backgroundSize = 'cover';
+                        cell.style.backgroundPosition = 'center';
+                    }
 
                 }
 
@@ -1554,26 +1642,6 @@ function setModalStar(value){
 
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-
-    const recommendBtn =
-    document.getElementById('recommend-drag-btn');
-
-    if(recommendBtn){
-
-        recommendBtn.addEventListener('dragstart',()=>{
-
-            if(recommendedMeal){
-
-                draggedMeal = recommendedMeal;
-
-            }
-
-        });
-
-    }
-
-});
 
 
 function generateStarHTML(date,star){
@@ -1649,17 +1717,44 @@ function openModal(date){
     const preview =
     document.getElementById('photo-preview');
 
+    const deleteBtn =
+    document.getElementById('photo-delete-btn');
+
     if(meal && meal.photo){
 
         preview.src = meal.photo;
 
         preview.style.display='block';
+        deleteBtn.style.display='block';
 
     }else{
 
         preview.style.display='none';
+        deleteBtn.style.display='none';
     }
 
+}
+
+function removePhotoFromMeal(){
+
+    const date =
+    document.getElementById('modal-date').value;
+
+    if(appData.meals[date]){
+        appData.meals[date].photo = '';
+    }
+
+    document.getElementById('photo-preview').style.display='none';
+    document.getElementById('photo-delete-btn').style.display='none';
+    document.getElementById('modal-photo').value='';
+}
+
+function closeRecommendBox(){
+
+    document.getElementById('recommend-box')
+    .style.display='none';
+
+    recommendedMeal = null;
 }
 
 function closeModal(){
@@ -1873,6 +1968,144 @@ function toggleHistory(index){
 
 }
 
+
+function setupMobileTouchDrag(){
+
+    const isMobile =
+    window.innerWidth <= 900;
+
+    if(!isMobile){
+        return;
+    }
+
+    document.querySelectorAll('.history-card[draggable="true"], #recommend-box[draggable="true"], .cell[draggable="true"]')
+    .forEach(el=>{
+
+        el.addEventListener('touchstart', e=>{
+
+            const touch =
+            e.touches[0];
+
+            let dragData = null;
+
+            const historyDate =
+            el.getAttribute('data-date');
+
+            if(historyDate && appData.meals[historyDate]){
+
+                dragData = {
+                    ...appData.meals[historyDate],
+                    __sourceDate:historyDate
+                };
+
+            }else if(recommendedMeal){
+
+                dragData =
+                recommendedMeal;
+
+            }
+
+            if(!dragData){
+                return;
+            }
+
+            draggedMeal = dragData;
+
+            const target =
+            document.elementFromPoint(
+                touch.clientX,
+                touch.clientY
+            );
+
+            if(target){
+                target.classList.add('drag-over');
+            }
+
+        }, { passive:true });
+
+        el.addEventListener('touchmove', e=>{
+
+            const touch =
+            e.touches[0];
+
+            document.querySelectorAll('.cell')
+            .forEach(cell=>{
+                cell.classList.remove('drag-over');
+            });
+
+            const target =
+            document.elementFromPoint(
+                touch.clientX,
+                touch.clientY
+            );
+
+            const cell =
+            target?.closest('.cell');
+
+            if(cell){
+                cell.classList.add('drag-over');
+            }
+
+        }, { passive:true });
+
+        el.addEventListener('touchend', e=>{
+
+            document.querySelectorAll('.cell')
+            .forEach(cell=>{
+                cell.classList.remove('drag-over');
+            });
+
+            const touch =
+            e.changedTouches[0];
+
+            const target =
+            document.elementFromPoint(
+                touch.clientX,
+                touch.clientY
+            );
+
+            const cell =
+            target?.closest('.cell');
+
+            if(!cell || !draggedMeal){
+                return;
+            }
+
+            cell.click();
+
+            const date =
+            document.getElementById('modal-date').value;
+
+            if(!date){
+                return;
+            }
+
+            const sourceDate = draggedMeal.__sourceDate;
+
+            appData.meals[date] = {
+                menu:draggedMeal.menu,
+                memo:draggedMeal.memo,
+                ingredients:[...(draggedMeal.ingredients || [])],
+                star:draggedMeal.star || 0,
+                photo:draggedMeal.photo || ''
+            };
+
+            if(sourceDate && sourceDate !== date){
+                delete appData.meals[sourceDate];
+            }
+
+            recalculateInventory();
+            saveData();
+            updateAllViews();
+            closeModal();
+
+        });
+
+    });
+
+}
+
+
 function renderHistory(){
 
     const list =
@@ -1919,7 +2152,10 @@ function renderHistory(){
         '★'.repeat(meal.star || 0);
 
         list.innerHTML += `
-        <div class="history-card">
+        <div class="history-card"
+        draggable="true"
+        ondragstart="startDrag('${date}')"
+        data-date="${date}">
 
             <div
             class="history-header"
@@ -1945,12 +2181,15 @@ function renderHistory(){
 
                 ${(meal.ingredients || []).join(', ') || '없음'}
 
-                <button
-                class="history-drag"
-                draggable="true"
-                ondragstart="startDrag('${date}')">
-                📌 드래그해서 달력에 놓기
-                </button>
+                
+<div
+class="history-drag"
+data-date="${date}"
+draggable="true"
+ondragstart="startDrag('${date}')"
+style="margin-top:10px; padding:10px; background:#ffe7da; border-radius:12px; text-align:center; font-weight:800;">
+📌 이 영역을 길게 눌러 달력으로 이동
+</div>
 
             </div>
 
@@ -1962,8 +2201,10 @@ function renderHistory(){
 
 function startDrag(date){
 
-    draggedMeal =
-    appData.meals[date];
+    draggedMeal = {
+        ...appData.meals[date],
+        __sourceDate:date
+    };
 
 }
 
@@ -2006,6 +2247,7 @@ function recommendMenu(){
     }
 
     const today = new Date();
+    today.setHours(0,0,0,0);
 
     const inventoryNames =
     Object.keys(appData.inventory)
@@ -2017,6 +2259,24 @@ function recommendMenu(){
 
     });
 
+    const blockedMenus = new Set();
+
+    meals.forEach(([date,meal])=>{
+
+        const mealDate = new Date(date);
+        mealDate.setHours(0,0,0,0);
+
+        const diffDays =
+        Math.abs(
+            Math.floor((mealDate - today)/(1000*60*60*24))
+        );
+
+        if(diffDays <= 7){
+            blockedMenus.add(meal.menu);
+        }
+
+    });
+
     const candidates = [];
 
     meals.forEach(([date,meal])=>{
@@ -2025,13 +2285,7 @@ function recommendMenu(){
             return;
         }
 
-        const diffDays =
-        Math.floor(
-            (today - new Date(date))
-            / (1000*60*60*24)
-        );
-
-        if(diffDays < 7){
+        if(blockedMenus.has(meal.menu)){
             return;
         }
 
@@ -2061,7 +2315,7 @@ function recommendMenu(){
 조건:
 
 - 별점 3 이상
-- 최근 7일 이내 먹지 않음
+- 오늘 기준 앞뒤 7일 메뉴 제외
 - 현재 보유 식재료로 가능`
         );
 
@@ -2073,10 +2327,24 @@ function recommendMenu(){
         Math.floor(Math.random()*candidates.length)
     ];
 
-    recommendedMeal = picked;
+    recommendedMeal = {
+        ...picked,
+        __sourceDate:null
+    };
 
     document.getElementById('recommend-box')
     .style.display='block';
+
+    document.getElementById('recommend-box')
+    .classList.add('recommend-click-drag');
+
+    document.getElementById('recommend-box')
+    .setAttribute('draggable','true');
+
+    document.getElementById('recommend-box')
+    .ondragstart = ()=>{
+        draggedMeal = recommendedMeal;
+    };
 
     document.getElementById('recommend-menu-name')
     .innerText =
@@ -2087,6 +2355,7 @@ function recommendMenu(){
     `
     ⭐ ${picked.star}점<br>
     🥕 ${(picked.ingredients || []).join(', ')}
+    ${picked.photo ? `<img src="${picked.photo}" class="recommend-photo">` : ''}
     `;
 
 }
