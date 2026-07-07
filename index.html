@@ -42,8 +42,14 @@ li{ padding:8px 0; border-bottom:1px dashed #ffdccc; line-height:1.5; font-size:
 .cell.drag-over{ border:2px dashed #ff8b5c; background:#fff0e6; }
 .weekday-mobile{ display:block; font-size:11px; margin-top:2px; color:#888; font-weight:600; }
 .date{ font-weight:800; color:#ff9d76; margin-bottom:6px; font-size:14px; text-shadow:0 1px 2px rgba(255,255,255,0.8); }
-.meal-block-cell{ background:linear-gradient(135deg,#ffd8c2,#ffe9dd); border-radius:12px; padding:6px; margin-bottom:4px; font-size:12px; font-weight:800; word-break:keep-all; }
+
+.meal-block-cell{ border-radius:12px; padding:6px; margin-bottom:4px; word-break:keep-all; cursor:grab;}
+.meal-block-cell.lunch{ background:#fff0e6; }
+.meal-block-cell.dinner{ background:#f0f4ff; }
 .meal-block-cell.completed{ background:linear-gradient(135deg,#e2f0cb,#d4e5b2); color:#4a6b2c; }
+.main-menu-text{ font-weight:800; font-size:12px; }
+.sub-menu-text{ font-size:11px; color:#666; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; font-weight:normal; }
+
 .star-rating{ font-size:14px; letter-spacing:0px; display:flex; align-items:center; gap:1px; margin-top:4px; }
 .star-rating span{ transition:0.15s; cursor:pointer; }
 .star-rating span:not(.empty){ color:#ffb400; }
@@ -52,11 +58,13 @@ li{ padding:8px 0; border-bottom:1px dashed #ffdccc; line-height:1.5; font-size:
 .modal.active{ display:block; }
 .overlay{ position:fixed; inset:0; background:rgba(80,50,30,0.28); backdrop-filter:blur(3px); z-index:99; display:none; }
 .overlay.active{ display:block; }
-.history-card{ background:#fff7f2; border:2px solid #ffe0cf; border-radius:16px; margin-bottom:10px; overflow:hidden; }
-.history-header{ padding:12px; cursor:pointer; font-weight:800; display:flex; justify-content:space-between; align-items:center; }
-.history-body{ display:none; padding:0 12px 12px 12px; border-top:1px dashed #ffdccc; font-size:13px; }
+
+.history-card{ background:#fff7f2; border:2px solid #ffe0cf; border-radius:12px; margin-bottom:6px; overflow:hidden; }
+.history-header{ padding:6px 8px; font-size:13px; cursor:pointer; font-weight:800; display:flex; justify-content:space-between; align-items:center; }
+.history-body{ display:none; padding:0 8px 8px 8px; border-top:1px dashed #ffdccc; font-size:12px; }
 .history-body.active{ display:block; }
-.history-drag{ background:#ffcf91; color:#7b4d34; width:100%; margin-top:10px; padding:8px; border-radius:10px; text-align:center; font-weight:bold; cursor:grab; }
+.history-drag{ background:#ffcf91; color:#7b4d34; width:100%; margin-top:6px; padding:6px; border-radius:8px; text-align:center; font-weight:bold; cursor:grab; font-size:11px; }
+
 .pagination{ display:flex; gap:8px; margin-top:14px; }
 .pagination button{ flex:1; }
 .buy-btn{ background:#9ad29a; color:white; font-size:11px; padding:4px 8px; border-radius:8px; margin-left:8px; }
@@ -70,6 +78,12 @@ li{ padding:8px 0; border-bottom:1px dashed #ffdccc; line-height:1.5; font-size:
 .modal-star-btn.active{ background:#ffc83d; color:white; }
 .photo-preview{ width:100%; border-radius:14px; margin-top:8px; display:none; object-fit:cover; max-height:240px; }
 .complete-meal-btn{ background:#7fc97f; color:white; width:100%; margin-top:10px; padding:12px; font-size:15px; }
+
+.meal-type-toggle{ display:flex; gap:4px; margin-bottom:10px; }
+.type-btn{ flex:1; padding:8px; font-size:13px; background:#fff; border:1px solid #ffdccc; border-radius:8px; color:#888; cursor:pointer; transition:0.2s; }
+.type-btn.active.lunch{ background:#ffe4cd; color:#d97706; border-color:#ffb089; font-weight:800; }
+.type-btn.active.dinner{ background:#dce5fc; color:#3b82f6; border-color:#93c5fd; font-weight:800; }
+
 @media(max-width:1400px){ .app-layout{ grid-template-columns:1fr; } .side-panel{ max-height:none; } }
 @media(max-width:900px){ body{ padding:8px; } .panel{ padding:12px; } .grid{ grid-template-columns:1fr; gap:6px; } .weekdays{ display:none; } .cell{ min-height:100px; padding:8px; border-radius:14px; } .date{ font-size:13px; margin-bottom:6px; } }
 </style>
@@ -81,30 +95,35 @@ li{ padding:8px 0; border-bottom:1px dashed #ffdccc; line-height:1.5; font-size:
 <div class="panel side-panel">
 <div id="sync-status" class="status offline">실시간 연결 중...</div>
 <h2>🧺 식재료 관리</h2>
-<div style="font-size:12px; color:#666; margin-bottom:10px;">숫자 없이 입력하면 상시 재료 처리<br>예: 간장 / 소금 / 후추</div>
+<div style="font-size:12px; color:#666; margin-bottom:10px;">숫자 없이 입력하면 상시 재료 처리<br>예: 간장 / 소금 / 햇반 2 / 우유 500ml</div>
 <div class="inventory-input-wrap">
-<input type="text" id="new-item-name" placeholder="예: 햇반 2 / 간장">
+<input type="text" id="new-item-name" placeholder="예: 햇반 2 / 간장 500ml / 소금">
 <button class="add-btn" onclick="addInventory()">추가</button>
 </div>
 <div class="section">
 <button class="section-toggle" onclick="toggleSection('inventory-section', this)">
-<span>📦 보유 식재료</span><span class="section-arrow">▼</span>
+<span>📦 보유 식재료 (예정 포함)</span><span class="section-arrow">▼</span>
 </button>
-<div id="inventory-section" class="section-content"><ul id="inventory-list"></ul></div>
+<div id="inventory-section" class="section-content">
+<ul id="inventory-list"></ul>
+<div class="pagination" id="inventory-pagination" style="margin-top:10px; display:flex; align-items:center;">
+<button onclick="prevInventoryPage()" style="background:#ffb089; color:white;">◀ 이전</button>
+<span id="inventory-page-indicator" style="font-weight:800; color:#ff8b5c; margin:0 10px; text-align:center; flex-shrink:0;"></span>
+<button onclick="nextInventoryPage()" style="background:#ffb089; color:white;">다음 ▶</button>
 </div>
-<div class="section">
-<button class="section-toggle" onclick="toggleSection('planned-section', this)">
-<span>📋 사용 예정 식재료 (미완료)</span><span class="section-arrow">▼</span>
-</button>
-<div id="planned-section" class="section-content"><ul id="planned-list"></ul></div>
+</div>
 </div>
 <div class="section">
 <button class="section-toggle" onclick="toggleSection('shopping-section', this)">
-<span>🛒 구매 필요 (보유량 부족)</span><span class="section-arrow">▼</span>
+<span>🛒 구매 필요 (수동/부족분)</span><span class="section-arrow">▼</span>
 </button>
 <div id="shopping-section" class="section-content">
 <div style="margin-bottom:10px;">
 <button onclick="purchaseAllIngredients()" style="background:#7fc97f; color:white; width:100%;">🛍 전체 구매완료</button>
+</div>
+<div class="inventory-input-wrap" style="margin-bottom:10px;">
+<input type="text" id="manual-shop-name" placeholder="수동 구매 추가 (예: 치즈 2장)">
+<button class="add-btn" onclick="addManualShopping()">추가</button>
 </div>
 <ul id="shopping-list"></ul>
 </div>
@@ -177,18 +196,34 @@ let mobileWeekIndex = 0;
 const WEEKDAY_NAMES = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
 
 let draggedMeal = null;
+let isMealDropped = false;
 let recommendedMeal = null;
 let historyPage = 0;
 const HISTORY_PER_PAGE = 7;
-let appData = { meals:{}, baseInventory:{}, memoBoard:"" };
+let inventoryPage = 0;
+const INVENTORY_PER_PAGE = 10;
+let appData = { meals:{}, baseInventory:{}, memoBoard:"", manualShopping:[] };
 let tempModalMeals = []; 
 
+function normalizeMeal(m) {
+    if (m.menu !== undefined && m.mainMenu === undefined) {
+        m.mainMenu = m.menu;
+        m.mealType = 'dinner';
+        m.subMenu = '';
+    }
+    if (!m.mealType) m.mealType = 'dinner';
+    if (!m.mainMenu) m.mainMenu = '';
+    if (!m.subMenu) m.subMenu = '';
+    return m;
+}
+
 function parseIngredient(str){
-    // 소수점 허용 정규식으로 변경
-    const match = str.match(/^(.*?)\s*(\d+(?:\.\d+)?)$/);
-    return match
-    ? { name:match[1].trim(), qty:parseFloat(match[2]), permanent:false }
-    : { name:str.trim(), qty:1, permanent:true };
+    const match = str.trim().match(/^(.*?)\s*(\d+(?:\.\d+)?)\s*([a-zA-Z가-힣]*)$/);
+    if(match){
+        return { name:match[1].trim(), qty:parseFloat(match[2]), unit:match[3] || '', permanent:false };
+    } else {
+        return { name:str.trim(), qty:1, unit:'', permanent:true };
+    }
 }
 
 function toggleSection(id, button){
@@ -209,7 +244,6 @@ async function loadData(){
     const { data } = await supabaseClient.from('meal_planner').select('*').eq('room_id',ROOM_ID).single();
     if(data){
         appData = data.data;
-        // 데이터 마이그레이션: 기존 단일 객체 방식이던 식단을 배열로 자동 변환
         if(appData.meals){
             Object.keys(appData.meals).forEach(date => {
                 if(!Array.isArray(appData.meals[date])){
@@ -220,6 +254,7 @@ async function loadData(){
     }
     if(!appData.baseInventory) appData.baseInventory = {};
     if(!appData.meals) appData.meals = {};
+    if(!appData.manualShopping) appData.manualShopping = [];
     if(appData.memoBoard !== undefined) document.getElementById('global-memo').value = appData.memoBoard;
     updateAllViews();
 }
@@ -240,6 +275,7 @@ function setupRealtime(){
     .on('postgres_changes', { event:'UPDATE', schema:'public', table:'meal_planner' }, payload=>{
         if(payload.new.room_id === ROOM_ID){
             appData = payload.new.data;
+            if(!appData.manualShopping) appData.manualShopping = [];
             if(appData.memoBoard !== undefined && document.activeElement.id !== 'global-memo') {
                 document.getElementById('global-memo').value = appData.memoBoard;
             }
@@ -262,7 +298,6 @@ function updateAllViews(){
     setTimeout(()=>setupMobileTouchDrag(),50);
 }
 
-// 이미지 리사이징/업로드 로직 생략 (기존 유지)
 async function resizeImage(file, maxSize=800, quality=0.82){
     return new Promise((resolve,reject)=>{
         const reader = new FileReader();
@@ -299,9 +334,13 @@ function addInventory(){
     const input = document.getElementById('new-item-name').value.trim();
     if(!input) return;
     const parsed = parseIngredient(input);
-    if(!appData.baseInventory[parsed.name]) appData.baseInventory[parsed.name] = { qty:0, permanent:parsed.permanent };
-    if(parsed.permanent) appData.baseInventory[parsed.name].permanent = true;
-    else appData.baseInventory[parsed.name].qty += parsed.qty;
+    if(!appData.baseInventory[parsed.name]) appData.baseInventory[parsed.name] = { qty:0, unit:parsed.unit, permanent:parsed.permanent };
+    if(parsed.permanent) {
+        appData.baseInventory[parsed.name].permanent = true;
+    } else {
+        appData.baseInventory[parsed.name].qty += parsed.qty;
+        if(parsed.unit) appData.baseInventory[parsed.name].unit = parsed.unit;
+    }
     document.getElementById('new-item-name').value='';
     saveData(); updateAllViews();
 }
@@ -313,90 +352,159 @@ function removeInventory(name){
 
 function editInventoryPrompt(name) {
     const item = appData.baseInventory[name];
-    const newName = prompt("식재료 수정 (이름):", name);
-    if(!newName || newName.trim() === '') return;
-    let newQtyStr = prompt("식재료 수정 (수량 - 상시면 빈칸):", item.permanent ? '' : item.qty);
-    if(newQtyStr === null) return;
+    let currentStr = name;
+    if(!item.permanent) {
+        currentStr += ` ${item.qty}${item.unit || ''}`;
+    }
+    const input = prompt("식재료 한 번에 수정 (예: 햇반 2, 간장 500ml, 소금):", currentStr);
+    if(!input || input.trim() === '') return;
     
-    delete appData.baseInventory[name]; // 기존 이름 삭제
+    const parsed = parseIngredient(input);
     
-    if(newQtyStr.trim() === '') {
-        appData.baseInventory[newName.trim()] = { qty:9999, permanent:true };
+    if (name !== parsed.name) delete appData.baseInventory[name];
+    
+    if(parsed.permanent) {
+        appData.baseInventory[parsed.name] = { qty:9999, unit:'', permanent:true };
     } else {
-        appData.baseInventory[newName.trim()] = { qty:parseFloat(newQtyStr), permanent:false };
+        appData.baseInventory[parsed.name] = { qty:parsed.qty, unit:parsed.unit, permanent:false };
     }
     saveData(); updateAllViews();
 }
 
+function addManualShopping() {
+    const input = document.getElementById('manual-shop-name').value.trim();
+    if(!input) return;
+    const parsed = parseIngredient(input);
+    if(!appData.manualShopping) appData.manualShopping = [];
+    appData.manualShopping.push(parsed);
+    document.getElementById('manual-shop-name').value = '';
+    saveData(); updateAllViews();
+}
+
+function purchaseManualIngredient(idx) {
+    const item = appData.manualShopping[idx];
+    purchaseIngredient(item.name, item.qty, item.unit);
+    appData.manualShopping.splice(idx, 1);
+    saveData(); updateAllViews();
+}
+
+function removeManualShopping(idx) {
+    appData.manualShopping.splice(idx, 1);
+    saveData(); updateAllViews();
+}
+
+function prevInventoryPage(){ if(inventoryPage > 0){ inventoryPage--; renderInventory(); } }
+function nextInventoryPage(){ inventoryPage++; renderInventory(); }
+
 function renderInventory(){
     const inventoryList = document.getElementById('inventory-list');
     const shoppingList = document.getElementById('shopping-list');
-    const plannedList = document.getElementById('planned-list');
-    inventoryList.innerHTML=''; shoppingList.innerHTML=''; plannedList.innerHTML='';
+    inventoryList.innerHTML=''; shoppingList.innerHTML='';
 
     const plannedMap = {};
     const todayString = getTodayString();
 
-    // 미래의 '미완료' 식단만 계산
     Object.entries(appData.meals).forEach(([date,mealsArr])=>{
         if(date < todayString) return;
         mealsArr.forEach(meal => {
-            if(meal.completed) return; // 완료된 건은 이미 차감됐으므로 패스
+            if(meal.completed) return;
             (meal.ingredients||[]).forEach(i=>{
                 const parsed = parseIngredient(i);
                 if(!appData.baseInventory[parsed.name]?.permanent) {
-                    if(!plannedMap[parsed.name]) plannedMap[parsed.name]=0;
-                    plannedMap[parsed.name] += parsed.qty;
+                    if(!plannedMap[parsed.name]) plannedMap[parsed.name]={ qty:0, unit:parsed.unit };
+                    plannedMap[parsed.name].qty += parsed.qty;
+                    if(parsed.unit) plannedMap[parsed.name].unit = parsed.unit;
                 }
             });
         });
     });
 
-    Object.keys(plannedMap).sort().forEach(name=>{
-        plannedList.innerHTML += `<li>📋 ${name} (${plannedMap[name]})</li>`;
+    let combinedInventory = [];
+    Object.keys(appData.baseInventory).forEach(name => combinedInventory.push(name));
+    Object.keys(plannedMap).forEach(name => {
+        if(!appData.baseInventory[name]) combinedInventory.push(name);
     });
+    
+    combinedInventory = [...new Set(combinedInventory)].sort();
 
-    Object.keys(appData.baseInventory).sort().forEach(name=>{
+    // 수정 핵심 포인트: 전체 리스트를 먼저 돌면서 쇼핑리스트(구매 필요) 데이터를 무조건 다 띄움 (페이징과 완전히 분리)
+    combinedInventory.forEach(name => {
         const item = appData.baseInventory[name];
-        let buttonsHtml = `
-            <div>
-                <button class="inventory-edit-btn" onclick="editInventoryPrompt('${name}')">수정</button>
-                <button class="inventory-del-btn" onclick="removeInventory('${name}')">X</button>
-            </div>
-        `;
-        if(item.permanent){
-            inventoryList.innerHTML += `<li><span>♾️ ${name}</span>${buttonsHtml}</li>`;
-        } else {
-            inventoryList.innerHTML += `<li><span>📦 ${name} (${item.qty})</span>${buttonsHtml}</li>`;
-            // 보유량보다 계획된 양이 더 많으면 쇼핑리스트에 추가
-            let required = (plannedMap[name] || 0) - item.qty;
-            if(required > 0){
+        const planned = plannedMap[name];
+        
+        if (!item?.permanent) {
+            let required = (planned?.qty || 0) - (item?.qty || 0);
+            if (required > 0) {
+                let unit = planned?.unit || item?.unit || '';
                 shoppingList.innerHTML += `
                 <li>
-                    <span>❌ ${name} (${required} 부족)</span>
-                    <button class="buy-btn" onclick="purchaseIngredient('${name}', ${required})">구매완료</button>
+                    <span>❌ ${name} (${required}${unit} 부족)</span>
+                    <button class="buy-btn" onclick="purchaseIngredient('${name}', ${required}, '${unit}')">구매완료</button>
                 </li>`;
             }
         }
     });
 
-    // 계획에는 있는데 보유 식재료 목록에 아예 없는 경우
-    Object.keys(plannedMap).forEach(name => {
-        if(!appData.baseInventory[name]) {
+    if(appData.manualShopping && appData.manualShopping.length > 0) {
+        appData.manualShopping.forEach((shopItem, idx) => {
+            let unitStr = shopItem.unit || '';
             shoppingList.innerHTML += `
             <li>
-                <span>❌ ${name} (${plannedMap[name]} 부족)</span>
-                <button class="buy-btn" onclick="purchaseIngredient('${name}', ${plannedMap[name]})">구매완료</button>
+                <span>🛒 [수동] ${shopItem.name} ${shopItem.qty}${unitStr}</span>
+                <div>
+                    <button class="buy-btn" onclick="purchaseManualIngredient(${idx})">구매완료</button>
+                    <button class="inventory-del-btn" style="margin-left:4px;" onclick="removeManualShopping(${idx})">X</button>
+                </div>
             </li>`;
+        });
+    }
+
+    // 인벤토리(보유 식재료) 리스트만 페이징 적용하여 화면에 렌더링
+    let totalPages = Math.ceil(combinedInventory.length / INVENTORY_PER_PAGE);
+    if(inventoryPage >= totalPages && totalPages > 0) inventoryPage = totalPages - 1;
+    
+    const start = inventoryPage * INVENTORY_PER_PAGE;
+    const pagedInventory = combinedInventory.slice(start, start + INVENTORY_PER_PAGE);
+
+    pagedInventory.forEach(name=>{
+        const item = appData.baseInventory[name];
+        const planned = plannedMap[name];
+        
+        let buttonsHtml = ``;
+        if(item) {
+            buttonsHtml = `
+                <div>
+                    <button class="inventory-edit-btn" onclick="editInventoryPrompt('${name}')">수정</button>
+                    <button class="inventory-del-btn" onclick="removeInventory('${name}')">X</button>
+                </div>
+            `;
         }
-    })
+
+        if(item?.permanent){
+            inventoryList.innerHTML += `<li><span>♾️ ${name}</span>${buttonsHtml}</li>`;
+        } else {
+            if (item && item.qty > 0) {
+                let stockText = `${item.qty}${item.unit||''}`;
+                let plannedText = planned ? `<span style="color:#d97706; font-size:12px; margin-left:6px;">(예정: ${planned.qty}${planned.unit||''})</span>` : '';
+                let icon = '📦';
+                inventoryList.innerHTML += `<li><span>${icon} ${name} <b>${stockText}</b> ${plannedText}</span>${buttonsHtml}</li>`;
+            }
+        }
+    });
+
+    const pageIndicator = document.getElementById('inventory-page-indicator');
+    if (pageIndicator) {
+        pageIndicator.innerText = `${inventoryPage + 1} / ${totalPages > 0 ? totalPages : 1}`;
+    }
 }
 
-function purchaseIngredient(name, qty){
-    if(!appData.baseInventory[name]) appData.baseInventory[name] = { qty:0, permanent:false };
+function purchaseIngredient(name, qty, unit=''){
+    if(!appData.baseInventory[name]) appData.baseInventory[name] = { qty:0, unit:unit, permanent:false };
     appData.baseInventory[name].qty += qty;
+    if(unit) appData.baseInventory[name].unit = unit;
     saveData(); updateAllViews();
 }
+
 function purchaseAllIngredients(){
     const plannedMap = {};
     const todayString = getTodayString();
@@ -407,8 +515,9 @@ function purchaseAllIngredients(){
             (m.ingredients||[]).forEach(i=>{
                 const parsed = parseIngredient(i);
                 if(!appData.baseInventory[parsed.name]?.permanent) {
-                    if(!plannedMap[parsed.name]) plannedMap[parsed.name]=0;
-                    plannedMap[parsed.name] += parsed.qty;
+                    if(!plannedMap[parsed.name]) plannedMap[parsed.name]={ qty:0, unit:parsed.unit };
+                    plannedMap[parsed.name].qty += parsed.qty;
+                    if(parsed.unit) plannedMap[parsed.name].unit = parsed.unit;
                 }
             });
         });
@@ -416,16 +525,48 @@ function purchaseAllIngredients(){
     
     Object.keys(plannedMap).forEach(name=>{
         let stock = appData.baseInventory[name]?.qty || 0;
-        let required = plannedMap[name] - stock;
+        let required = plannedMap[name].qty - stock;
         if(required > 0) {
-            if(!appData.baseInventory[name]) appData.baseInventory[name] = { qty:0, permanent:false };
+            if(!appData.baseInventory[name]) appData.baseInventory[name] = { qty:0, unit:plannedMap[name].unit, permanent:false };
             appData.baseInventory[name].qty += required;
         }
     });
+
+    if(appData.manualShopping) {
+        appData.manualShopping.forEach(item => {
+            if(!appData.baseInventory[item.name]) appData.baseInventory[item.name] = { qty:0, unit:item.unit, permanent:item.permanent };
+            if(!item.permanent) appData.baseInventory[item.name].qty += item.qty;
+        });
+        appData.manualShopping = [];
+    }
+
     saveData(); updateAllViews();
 }
 
 function getMondayBasedDay(day){ return day === 0 ? 6 : day - 1; }
+
+function startDragMeal(event, date, idx) {
+    event.stopPropagation();
+    isMealDropped = false;
+    draggedMeal = {
+        sourceDate: date,
+        mealIndex: idx,
+        meals: [JSON.parse(JSON.stringify(appData.meals[date][idx]))]
+    };
+}
+
+function endDragMeal(event, date, idx) {
+    if (!isMealDropped && event.dataTransfer.dropEffect === 'none') {
+        if (confirm('이 메뉴를 삭제할거야?')) {
+            if (appData.meals[date] && appData.meals[date][idx]) {
+                appData.meals[date].splice(idx, 1);
+                if(appData.meals[date].length === 0) delete appData.meals[date];
+                saveData(); updateAllViews();
+            }
+        }
+    }
+    draggedMeal = null;
+}
 
 function renderCalendar(){
     const grid = document.getElementById('calendar-grid');
@@ -463,34 +604,56 @@ function renderCalendar(){
             let html = `<div class="date">${dayNumber} <div class="weekday-mobile">${weekdayName}</div></div>`;
             const mealsArr = appData.meals[date] || [];
             
-            if(mealsArr.length > 0){
-                cell.draggable = true;
-                cell.addEventListener('dragstart', ()=>{ draggedMeal = { sourceDate:date, meals:JSON.parse(JSON.stringify(mealsArr)) }; });
-            }
-            
-            // 드래그앤드롭 이벤트
-            cell.addEventListener('dragover', e=>{ e.preventDefault(); cell.classList.add('drag-over'); });
+            cell.addEventListener('dragover', e=>{ 
+                e.preventDefault(); 
+                e.dataTransfer.dropEffect = 'move'; 
+                cell.classList.add('drag-over'); 
+            });
             cell.addEventListener('dragleave', ()=>{ cell.classList.remove('drag-over'); });
-            cell.addEventListener('drop', ()=>{
+            
+            cell.addEventListener('drop', e => {
+                e.preventDefault();
                 cell.classList.remove('drag-over');
                 if(!draggedMeal) return;
+
+                isMealDropped = true;
                 const srcDate = draggedMeal.sourceDate;
-                if(srcDate && srcDate !== date) {
+
+                if (srcDate === null) {
                     if(!appData.meals[date]) appData.meals[date] = [];
-                    // 단일 복사인지, 통째로 이동인지 판별. 편의상 해당 날짜의 식단을 전부 대상날짜로 밀어넣음.
                     appData.meals[date] = appData.meals[date].concat(draggedMeal.meals);
-                    delete appData.meals[srcDate];
                     saveData(); updateAllViews();
+                } else if (srcDate && srcDate !== date) {
+                    const mealIdx = draggedMeal.mealIndex;
+                    if(mealIdx !== undefined && appData.meals[srcDate]) {
+                        if(!appData.meals[date]) appData.meals[date] = [];
+                        appData.meals[date].push(draggedMeal.meals[0]);
+                        appData.meals[srcDate].splice(mealIdx, 1);
+                        if(appData.meals[srcDate].length === 0) delete appData.meals[srcDate];
+                        saveData(); updateAllViews();
+                    }
                 }
             });
 
-            // 셀 내역 렌더링
+            mealsArr.forEach(m => normalizeMeal(m));
+            mealsArr.sort((a,b) => {
+                if(a.mealType === 'lunch' && b.mealType === 'dinner') return -1;
+                if(a.mealType === 'dinner' && b.mealType === 'lunch') return 1;
+                return 0;
+            });
+
             mealsArr.forEach((meal, idx) => {
                 const completeClass = meal.completed ? 'completed' : '';
-                const completeIcon = meal.completed ? '✅ ' : '🍽 ';
-                html += `<div class="meal-block-cell ${completeClass}">${completeIcon}${meal.menu}</div>`;
+                const typeClass = meal.mealType === 'lunch' ? 'lunch' : 'dinner';
+                const typeIcon = meal.completed ? '✅ ' : (meal.mealType === 'lunch' ? '☀️ ' : '🌙 ');
                 
-                // 완료된 경우에만 캘린더에서 별점 표시
+                html += `<div class="meal-block-cell ${typeClass} ${completeClass}" draggable="true" ondragstart="startDragMeal(event, '${date}', ${idx})" ondragend="endDragMeal(event, '${date}', ${idx})">`;
+                html += `<div class="main-menu-text">${typeIcon}${meal.mainMenu}</div>`;
+                if(meal.subMenu) {
+                    html += `<div class="sub-menu-text">${meal.subMenu}</div>`;
+                }
+                html += `</div>`;
+                
                 if(meal.completed) {
                     html += `<div class="star-rating">`;
                     for(let i=1;i<=5;i++){
@@ -499,9 +662,8 @@ function renderCalendar(){
                     html += `</div>`;
                 }
                 
-                // 첫번째 메뉴의 사진만 배경으로 (셀당 사진 1개만)
                 if(idx === 0 && meal.photo){
-                    cell.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0.7)), url(${meal.photo})`;
+                    cell.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url(${meal.photo})`;
                     cell.style.backgroundSize = window.innerWidth <= 900 ? 'contain' : 'cover';
                     cell.style.backgroundPosition = window.innerWidth <= 900 ? 'right bottom' : 'center';
                     cell.style.backgroundRepeat = 'no-repeat';
@@ -519,23 +681,23 @@ function setStar(date, idx, starValue){
     saveData(); updateAllViews();
 }
 
-// 모달 로직
 function openModal(date){
     document.getElementById('overlay').classList.add('active');
     document.getElementById('meal-modal').classList.add('active');
     document.getElementById('modal-date-title').innerText = date;
     document.getElementById('modal-date').value = date;
     
-    // 깊은 복사로 임시 상태 유지
     tempModalMeals = JSON.parse(JSON.stringify(appData.meals[date] || []));
+    tempModalMeals.forEach(m => normalizeMeal(m));
+    
     if(tempModalMeals.length === 0) {
-        tempModalMeals.push({ menu:'', memo:'', ingredients:[], photo:'', star:0, completed:false });
+        tempModalMeals.push({ mealType:'dinner', mainMenu:'', subMenu:'', memo:'', ingredients:[], photo:'', star:0, completed:false });
     }
     renderModalMeals();
 }
 
 function addMealToDate(){
-    tempModalMeals.push({ menu:'', memo:'', ingredients:[], photo:'', star:0, completed:false });
+    tempModalMeals.push({ mealType:'dinner', mainMenu:'', subMenu:'', memo:'', ingredients:[], photo:'', star:0, completed:false });
     renderModalMeals();
 }
 
@@ -549,6 +711,18 @@ function syncTempData(idx, field, value){
         tempModalMeals[idx].ingredients = value.split(',').map(v=>v.trim()).filter(v=>v);
     } else {
         tempModalMeals[idx][field] = value;
+    }
+}
+
+function handleIngredientKeydown(event, idx, input) {
+    if (event.key === ' ') {
+        event.preventDefault();
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const val = input.value;
+        input.value = val.substring(0, start) + ', ' + val.substring(end);
+        input.selectionStart = input.selectionEnd = start + 2;
+        syncTempData(idx, 'ingredients', input.value);
     }
 }
 
@@ -589,14 +763,20 @@ function renderModalMeals(){
                 <button class="del-meal-btn" onclick="removeModalMeal(${idx})">삭제</button>
             </h4>
             
-            <input type="text" placeholder="🍽 메뉴 이름" value="${meal.menu}" onchange="syncTempData(${idx}, 'menu', this.value)">
+            <div class="meal-type-toggle">
+                <button type="button" class="type-btn lunch ${meal.mealType==='lunch'?'active':''}" onclick="tempModalMeals[${idx}].mealType='lunch'; renderModalMeals();">☀️ 점심</button>
+                <button type="button" class="type-btn dinner ${meal.mealType==='dinner'?'active':''}" onclick="tempModalMeals[${idx}].mealType='dinner'; renderModalMeals();">🌙 저녁</button>
+            </div>
             
-            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:#ff8b5c; margin-bottom:4px;">
+            <input type="text" placeholder="🍽 메인 메뉴 (예: 김치찌개)" value="${meal.mainMenu}" onchange="syncTempData(${idx}, 'mainMenu', this.value)">
+            <input type="text" placeholder="🍲 서브 메뉴 (예: 계란말이, 시금치나물)" value="${meal.subMenu}" onchange="syncTempData(${idx}, 'subMenu', this.value)">
+            
+            <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:800; color:#ff8b5c; margin-bottom:4px; margin-top:8px;">
                 <span>📝 메모 / 레시피</span> ${linkHtml}
             </div>
             <textarea rows="2" placeholder="메모나 레시피 링크" onchange="syncTempData(${idx}, 'memo', this.value)">${meal.memo}</textarea>
             
-            <input type="text" placeholder="🥕 필요 식재료 (예: 햇반 2, 간장)" value="${meal.ingredients.join(', ')}" onchange="syncTempData(${idx}, 'ingredients', this.value)">
+            <input type="text" placeholder="🥕 필요 식재료 (예: 햇반 2, 간장 500ml)" value="${meal.ingredients.join(', ')}" onchange="syncTempData(${idx}, 'ingredients', this.value)" onkeydown="handleIngredientKeydown(event, ${idx}, this)">
             
             ${meal.completed ? 
                 `<div style="font-size:13px; font-weight:800; color:#4a6b2c; margin-top:10px;">✅ 식사 완료 (식재료 차감됨)</div>
@@ -615,25 +795,23 @@ function renderModalMeals(){
 }
 
 function markMealCompleted(idx) {
-    // 폼 값 최신화 후 적용
     const inputs = document.getElementById('modal-meals-container').querySelectorAll('.modal-meal-entry');
     tempModalMeals.forEach((m, i) => {
-        m.menu = inputs[i].querySelectorAll('input[type="text"]')[0].value;
+        m.mainMenu = inputs[i].querySelectorAll('input[type="text"]')[0].value;
+        m.subMenu = inputs[i].querySelectorAll('input[type="text"]')[1].value;
         m.memo = inputs[i].querySelector('textarea').value;
-        m.ingredients = inputs[i].querySelectorAll('input[type="text"]')[1].value.split(',').map(v=>v.trim()).filter(v=>v);
+        m.ingredients = inputs[i].querySelectorAll('input[type="text"]')[2].value.split(',').map(v=>v.trim()).filter(v=>v);
     });
 
     const meal = tempModalMeals[idx];
-    if(!meal.menu) return alert('메뉴 이름을 먼저 입력해');
+    if(!meal.mainMenu) return alert('메인 메뉴 이름을 먼저 입력해');
     
-    // 식재료 실 차감
     meal.ingredients.forEach(ing => {
         const parsed = parseIngredient(ing);
         if(appData.baseInventory[parsed.name] && !appData.baseInventory[parsed.name].permanent){
             appData.baseInventory[parsed.name].qty -= parsed.qty;
         } else if(!appData.baseInventory[parsed.name]) {
-             // 차감하려는데 재고에 없으면 0이나 마이너스로 등록
-            appData.baseInventory[parsed.name] = { qty: -parsed.qty, permanent: false };
+            appData.baseInventory[parsed.name] = { qty: -parsed.qty, unit:parsed.unit, permanent: false };
         }
     });
 
@@ -643,9 +821,18 @@ function markMealCompleted(idx) {
 
 async function saveAllMeals(){
     const date = document.getElementById('modal-date').value;
-    // 비어있는 메뉴 필터링
-    const validMeals = tempModalMeals.filter(m => m.menu.trim() !== '');
+    const validMeals = tempModalMeals.filter(m => m.mainMenu.trim() !== '');
     
+    validMeals.forEach(m => { 
+        delete m.menu; 
+        m.ingredients.forEach(ing => {
+            const parsed = parseIngredient(ing);
+            if (!appData.baseInventory[parsed.name]) {
+                appData.baseInventory[parsed.name] = { qty: 0, unit: parsed.unit, permanent: parsed.permanent };
+            }
+        });
+    });
+
     if(validMeals.length === 0){
         delete appData.meals[date];
     } else {
@@ -696,15 +883,17 @@ function renderHistory(){
     const keyword = document.getElementById('history-search').value.trim();
     list.innerHTML='';
 
-    // 날짜-메뉴별로 분리해서 표시
     let flatMeals = [];
     Object.entries(appData.meals).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([date, mealsArr])=>{
-        mealsArr.forEach(m => flatMeals.push({ date, ...m }));
+        mealsArr.forEach(m => {
+            let normalized = normalizeMeal(Object.assign({}, m));
+            flatMeals.push({ date, ...normalized });
+        });
     });
 
     if(keyword){
         flatMeals = flatMeals.filter(m => {
-            return `${m.menu} ${m.ingredients.join(', ')}`.includes(keyword);
+            return `${m.mainMenu} ${m.subMenu} ${m.ingredients.join(', ')}`.includes(keyword);
         });
     }
 
@@ -713,15 +902,16 @@ function renderHistory(){
 
     paged.forEach((meal, index)=>{
         const stars = '★'.repeat(meal.star || 0);
+        const typeStr = meal.mealType === 'lunch' ? '☀️점심' : '🌙저녁';
         list.innerHTML += `
-        <div class="history-card" draggable="true" ondragstart="startDragSingle(event, '${meal.date}', '${meal.menu}')">
+        <div class="history-card" draggable="true" ondragstart="startDragSingle(event, '${meal.date}', '${meal.mainMenu}')">
             <div class="history-header" onclick="document.getElementById('history-body-${index}').classList.toggle('active')">
-                <span>${meal.date} - 🍽 ${meal.menu}</span> <span>▼</span>
+                <span>${meal.date} - [${typeStr}] ${meal.mainMenu} ${meal.subMenu ? `(${meal.subMenu})` : ''}</span> <span>▼</span>
             </div>
             <div class="history-body" id="history-body-${index}">
                 ⭐ ${stars || '없음'}<br><br>
                 🥕 식재료: ${(meal.ingredients || []).join(', ') || '없음'}
-                <div class="history-drag" draggable="true" ondragstart="startDragSingle(event, '${meal.date}', '${meal.menu}')">
+                <div class="history-drag" draggable="true" ondragstart="startDragSingle(event, '${meal.date}', '${meal.mainMenu}')">
                     📌 이 영역을 길게 눌러 달력으로 이동
                 </div>
             </div>
@@ -731,9 +921,12 @@ function renderHistory(){
 
 function startDragSingle(event, srcDate, targetMenu){
     const arr = appData.meals[srcDate];
-    const targetMeal = arr.find(m => m.menu === targetMenu);
+    if(!arr) return;
+    const targetMeal = arr.find(m => {
+        const norm = normalizeMeal(Object.assign({}, m));
+        return norm.mainMenu === targetMenu;
+    });
     if(targetMeal) {
-        // 복사본 드래그
         draggedMeal = { sourceDate:null, meals:[ JSON.parse(JSON.stringify(targetMeal)) ] }; 
     }
 }
@@ -746,7 +939,9 @@ function nextHistoryPage(){
 
 function recommendMenu(){
     let flatMeals = [];
-    Object.entries(appData.meals).forEach(([date, mealsArr])=>{ mealsArr.forEach(m => flatMeals.push({ date, ...m })); });
+    Object.entries(appData.meals).forEach(([date, mealsArr])=>{
+        mealsArr.forEach(m => flatMeals.push({ date, ...normalizeMeal(Object.assign({}, m)) }));
+    });
     if(flatMeals.length === 0){ alert('데이터가 없어.'); return; }
 
     const today = new Date(); today.setHours(0,0,0,0);
@@ -755,12 +950,12 @@ function recommendMenu(){
     
     flatMeals.forEach(m => {
         const mealDate = new Date(m.date); mealDate.setHours(0,0,0,0);
-        if(Math.abs(Math.floor((mealDate - today)/(1000*60*60*24))) <= 7) blockedMenus.add(m.menu);
+        if(Math.abs(Math.floor((mealDate - today)/(1000*60*60*24))) <= 7) blockedMenus.add(m.mainMenu);
     });
 
     const candidates = flatMeals.filter(m => {
         if((m.star || 0) < 3) return false;
-        if(blockedMenus.has(m.menu)) return false;
+        if(blockedMenus.has(m.mainMenu)) return false;
         return (m.ingredients || []).every(i=> inventoryNames.includes(parseIngredient(i).name));
     });
 
@@ -771,7 +966,7 @@ function recommendMenu(){
     
     document.getElementById('recommend-box').style.display='block';
     document.getElementById('recommend-box').setAttribute('draggable','true');
-    document.getElementById('recommend-menu-name').innerText = picked.menu;
+    document.getElementById('recommend-menu-name').innerText = picked.mainMenu;
     document.getElementById('recommend-menu-info').innerHTML = `⭐ ${picked.star}점<br>🥕 ${(picked.ingredients || []).join(', ')}${picked.photo ? `<img src="${picked.photo}" class="recommend-photo">` : ''}`;
 }
 
@@ -779,8 +974,8 @@ function closeRecommendBox(){ document.getElementById('recommend-box').style.dis
 
 function setupMobileTouchDrag(){
     if(window.innerWidth > 900) return;
-    document.querySelectorAll('.history-card[draggable="true"], #recommend-box[draggable="true"], .cell[draggable="true"]').forEach(el=>{
-        el.addEventListener('touchstart', e=>{ /* 터치 드래그 생략 시 순정 호환 동작 */ }, { passive:true });
+    document.querySelectorAll('.history-card[draggable="true"], #recommend-box[draggable="true"], .meal-block-cell[draggable="true"]').forEach(el=>{
+        el.addEventListener('touchstart', e=>{}, { passive:true });
     });
 }
 
